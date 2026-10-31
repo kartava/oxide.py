@@ -9,8 +9,10 @@ from oxide._core import (
     collect,
     partition,
 )
+from oxide._do import Do, do
 
 __all__ = [
+    "Do",
     "Err",
     "Nothing",
     "Ok",
@@ -19,5 +21,6 @@ __all__ = [
     "Some",
     "UnwrapError",
     "collect",
+    "do",
     "partition",
 ]

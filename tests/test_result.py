@@ -1,6 +1,6 @@
 import copy
 import pickle
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from operator import methodcaller
 from typing import Never, assert_type
 from unittest.mock import ANY
@@ -88,6 +88,11 @@ def test_deepcopy_round_trips_the_variant(
     result: Result[list[int], list[int]],
 ) -> None:
     assert copy.deepcopy(result) == result
+
+
+@pytest.mark.parametrize("result", [Ok([1]), Err([2])])
+def test_variant_is_not_iterable(result: Result[list[int], list[int]]) -> None:
+    assert not isinstance(result, Iterable)
 
 
 def test_is_ok_and_is_err_return_bool_on_an_ok() -> None:

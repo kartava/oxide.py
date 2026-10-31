@@ -1,5 +1,14 @@
-from collections.abc import Callable, Iterable
-from typing import Generic, Literal, Never, TypeAlias, TypeVar, cast, final
+from collections.abc import Callable, Generator, Iterable
+from typing import (
+    Any,
+    Generic,
+    Literal,
+    Never,
+    TypeAlias,
+    TypeVar,
+    cast,
+    final,
+)
 
 T = TypeVar("T")
 E = TypeVar("E")
@@ -67,6 +76,10 @@ class Ok(Generic[T_co]):
         return self
 
     def flatten(self: "Ok[Result[U, F]]") -> "Result[U, F]":
+        return self._value
+
+    def try_(self) -> Generator[Never, Any, T_co]:
+        yield from ()
         return self._value
 
     def __eq__(self, other: object) -> bool:
@@ -139,6 +152,10 @@ class Err(Generic[E_co]):
 
     def flatten(self) -> "Err[E_co]":
         return self
+
+    def try_(self) -> Generator["Err[E_co]", Any, Never]:
+        yield self
+        raise RuntimeError("`try_()` resumed after an Err, outside `@do`")
 
     def _raise(self, message: str) -> Never:
         if isinstance(self._error, BaseException):

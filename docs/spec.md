@@ -6,7 +6,7 @@ A Python developer who wants an absent value or an expected failure in a functio
 
 ## Solution
 
-The `oxide` package gives an Option (a Some or Nothing) and a Result (an Ok or an Err), in the terms of [CONTEXT.md](../CONTEXT.md). Each is a closed union, so `match` and `isinstance` narrow both branches on all four checkers, with no plugin and no config. A do function replaces Rust's `?`, and `@catch` turns the expected exceptions of a raising function into an Err. The codebase stays small, pins its tools, and CI tests it on Python 3.11 to 3.15.
+The `oxide` package gives an Option (a Some or Nothing) and a Result (an Ok or an Err), in the terms of [CONTEXT.md](../CONTEXT.md). Each is a closed union, so `match` and `isinstance` narrow both branches on all four checkers, with no plugin and no config. A do function replaces Rust's `?`, and `@catch` turns the expected exceptions of a raising function into an Err. The codebase stays small, pins its tools, and CI tests it on Python 3.11 to 3.15. PyPI serves each version, so a caller pins one.
 
 ## User Stories
 
@@ -23,10 +23,12 @@ The `oxide` package gives an Option (a Some or Nothing) and a Result (an Ok or a
 11. As a caller, I want `is_ok()`, `is_err()`, `is_some()` and `is_nothing()`, so that a call such as `filter(lambda result: result.is_ok(), results)` works.
 12. As a caller, I want variants that compare, hash, print and pickle, so that they work in tests, sets, caches and multiprocessing.
 13. As a caller who runs mypy, pyright, ty or pyrefly, I want the package's inline types, so that my checker needs no plugin and no config.
-14. As a caller, I want to install the package from GitHub on Python 3.11 to 3.15, so that I can use it before any release.
+14. As a caller, I want to install a pinned version from PyPI on Python 3.11 to 3.15, so that a new commit on `main` cannot change my code.
 15. As a reader of the repo, I want a README with install steps, one sample and the two narrowing styles, so that I can start without reading the code.
 16. As a contributor, I want one pinned dev group, the pre-commit hook and CI on each PR, so that my change passes the same checks on every supported Python.
 17. As a user of [`rustedpy/result`](https://github.com/rustedpy/result), I want a README table that maps its API to `oxide`, so that I can migrate my code.
+18. As a caller, I want a GitHub release for each version, with notes and the sdist and the wheel, so that I see what changed before I upgrade.
+19. As the maintainer, I want a tag push to build, upload and release a version after my approval, so that each release runs the same steps and no wrong version reaches PyPI.
 
 ## Implementation Decisions
 
@@ -46,7 +48,10 @@ The `oxide` package gives an Option (a Some or Nothing) and a Result (an Ok or a
 | `collect` takes Results only. | Key Decisions: `collect` |
 | The variants support `==`, `hash`, `repr` and pickle protocol 2 or later, and have no `__iter__`. `Nothing` stays one instance at every protocol. | design: Runtime behavior |
 | The minimum Python is 3.11, with old TypeVar syntax, and `typing_extensions` is a dependency below 3.12 only. | Key Decisions: Minimum Python, Dependencies |
-| The build backend is `hatchling` with a `src/oxide/` layout, `py.typed` and version `0.1.0`. | Key Decisions: Packaging |
+| The build backend is `hatchling` with a `src/oxide/` layout and `py.typed`. | Key Decisions: Packaging |
+| Only `pyproject.toml` names the version. The metadata adds `description`, `authors`, the classifiers and three URLs, and the sdist holds `src/` and `tests/`. | [release.md](release.md), Key Decisions: Version source, Version in docs, Metadata, sdist content |
+| A push of a `v*` tag runs `release.yml`. `build` stops when the tag is not `v` + `version`, then builds the sdist and the wheel. `publish` uploads them through trusted publishing, after the maintainer approves in environment `pypi`. `github-release` then creates the release with generated notes and both files. | [release.md](release.md), Key Decisions: Trigger, Upload, Approval, Tag check, GitHub release |
+| The README installs with `pip install oxide.py`, and links to the narrowing tests by an absolute URL. | [release.md](release.md), Key Decisions: README test link |
 | `[dependency-groups] dev` pins Ruff, pre-commit, pytest and the four checkers. Each install upgrades pip first, because `--group` needs pip 25.1. | design: Packaging and CI |
 | `ci.yml` imports `oxide` from a venv with only the package and runs pytest on 3.11 to 3.15, and a `check` job runs pre-commit and the four checkers at target 3.11. | Key Decisions: CI |
 | `CLAUDE.md` changes the status line, the commands and the hook pin rule. | design: Design Gate |
@@ -61,10 +66,11 @@ The `oxide` package gives an Option (a Some or Nothing) and a Result (an Ok or a
 - The four checkers report zero errors on `src/` and `tests/` at target 3.11, so the repo holds no committed negative case.
 - No test asserts the type of a lambda passed to a method on a union, because ty 0.0.95 types that lambda as `Unknown`.
 - The design's Narrowing styles table is the reference for `test_narrowing.py`.
+- `release.yml` has no test step. Its checks are the tag check and the build of the wheel from the sdist, and `ci.yml` tests the tagged commit ([release.md](release.md), Key Decisions: Tests in `release.yml`).
+- After each release, a check by hand installs the pinned version from PyPI in a new venv and imports `oxide`.
 
 ## Out of Scope
 
-- A PyPI upload, a GitHub release and version `1.0.0`. The release effort adds them in the next PR, after this one merges.
 - Async variants, `Panic`, a pydantic extra and a benchmark.
 - `sum`, `product`, ordering, `copy.replace` and iteration over a variant.
 - `TypeIs` free functions, do functions for Option, and `collect` for Option.

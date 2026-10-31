@@ -360,7 +360,7 @@ The checker settings live in `pyproject.toml`. pyright also needs `venvPath = ".
 | Docstrings | A public item that carries a fact its name and signature do not: what the call does in each case, what it raises, or a trap | An editor's hover and `help()` are the in-editor docs of a library, and an obvious docstring adds only noise. Ruff checks the form, not the presence: its `D1` rules skip `_` modules. **A docstring on every public item.** Rejected: `value` and `is_ok()` would restate their names. |
 | Runtime | `__slots__`, read-only properties, `==`, `hash`, `repr`, pickle protocol 2 or later, `Nothing.__reduce__` | Pickle has users in multiprocessing and caches. Pickle protocols 0 and 1 skip `__new__`, so `Nothing` needs `__reduce__` to stay one instance. Without `__hash__`, `__eq__` makes every variant unhashable. **Ordering and `copy.replace`.** Rejected: no v1 caller. **A raising `__setattr__` with `__reduce__` on each variant.** Rejected: slots and read-only properties already block public writes, and the default protocol, which multiprocessing uses, works for `Ok`, `Err` and `Some`. |
 | Async | None in v1 | It would double the API surface. |
-| Cuts | No pydantic extra, benchmark, migration guide, `sum` or `product` | None has a user before a release. The migration guide fits the release effort. |
+| Cuts | No pydantic extra, benchmark, `sum` or `product` | None has a user before a release. |
 | Minimum Python | 3.11, old TypeVar syntax | It reaches the most users. Ruff's `UP046` and `UP047` move the code to PEP 695 when 3.11 reaches end of life. **3.12 or 3.13.** Rejected: they drop 3.11 a year early. |
 | Dependencies | `typing_extensions` below 3.12 only | `TypeAliasType` is the only feature that 3.11 lacks. |
 | Checkers | mypy, pyright, ty, pyrefly, each with an exact pin | Proof on all four is the narrowing point. Exact pins keep a new release of ty, which is pre-1.0, out of CI. |
@@ -370,7 +370,7 @@ The checker settings live in `pyproject.toml`. pyright also needs `venvPath = ".
 | Packaging | `hatchling`, `src/oxide/`, `py.typed`, `0.1.0` | The README install step and CI need a build backend. `0.1.0` leaves `1.0.0` to the release effort. |
 | Dev tools | `[dependency-groups] dev` with exact pins | One list serves CI, contributors and `.venv`. |
 | Modules | `_core`, `_do` and `_catch`, re-exported from `__init__` | Option and Result call each other, so they share `_core`, and no import is circular. |
-| README | Install steps, one usage sample, the two styles | The narrowing tests prove the styles that it lists. |
+| README | Install steps, one usage sample, the two styles, a migration table from `rustedpy/result` 0.17.0 | The narrowing tests prove the styles that it lists. `rustedpy/result` is archived, so its users need a table that maps its API to `oxide`. |
 
 ## Unresolved Questions
 

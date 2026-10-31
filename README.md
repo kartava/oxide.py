@@ -33,6 +33,7 @@ pip install git+https://github.com/kartava/oxide.py
 - [Catching exceptions](#catching-exceptions)
 - [Do functions](#do-functions)
 - [Unwrap errors](#unwrap-errors)
+- [Migrating from rustedpy/result](#migrating-from-rustedpyresult)
 
 ## Importing
 
@@ -404,3 +405,24 @@ except UnwrapError as error:
     assert str(error).startswith("called `Result.unwrap()` on an `Err` value")
     assert isinstance(error.__cause__, ValueError)
 ```
+
+## Migrating from `rustedpy/result`
+
+The table maps the API of [`rustedpy/result`](https://github.com/rustedpy/result) 0.17.0, its last release, to `oxide`.
+
+| `rustedpy/result` | `oxide` | Change |
+|---|---|---|
+| `Ok`, `Err`, `Result`, `UnwrapError` | Same names | No change |
+| `OkErr`, the tuple `(Ok, Err)` | `(Ok, Err)` | `oxide` has no name for the tuple. Write `isinstance(result, (Ok, Err))`. |
+| `is_ok(result)`, `is_err(result)` | `match`, or `isinstance(result, Ok)` | The `rustedpy/result` functions narrow only the `if` branch. `match` and `isinstance` narrow both branches. The method `result.is_ok()` narrows nothing. |
+| `result.ok_value`, `result.err_value` | `result.value`, `result.error` | Rename |
+| `Ok(value).value` | `Ok(value).value` | No change |
+| `Err(error).value` | `Err(error).error` | An `oxide` `Err` has no `value`. |
+| `result.ok()`, `result.err()`, which return `T \| None` | `result.ok()`, `result.err()` | They return an Option. `.to_optional()` gives `T \| None`. |
+| `unwrap`, `expect`, `unwrap_err`, `expect_err`, `unwrap_or`, `unwrap_or_else`, `map`, `map_err`, `and_then`, `or_else` | Same names | No change |
+| `unwrap_or_raise`, `map_or`, `map_or_else`, `inspect`, `inspect_err` | No equivalent | Write the logic by hand. |
+| `UnwrapError.result`, the original Result | `UnwrapError.__cause__` | `oxide` keeps the error, not the Result, and only when the error is an exception. |
+| `@as_result(ValueError)` | `@catch(ValueError)` | `catch` takes 1 to 3 subclasses of `Exception`. It raises `TypeError` for no type, for `Exception`, and for any other type, such as `KeyboardInterrupt`. |
+| `do()` on a generator expression, which iterates the variants | `@do` on a generator function, with `yield from result.try_()` | New syntax: see [Do functions](#do-functions). `oxide` variants are not iterable. |
+| `as_async_result`, `do_async`, `map_async`, `and_then_async` | No equivalent | `oxide` has no async API. |
+| `if result:`, always true, because `Ok` and `Err` have no `__bool__` | Not possible | `bool()` raises `TypeError`: see [No truth value](#no-truth-value). |

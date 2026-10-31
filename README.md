@@ -22,7 +22,7 @@ def parse_port(text: str) -> int:
 The package needs Python 3.11 or later, and imports as `oxide`.
 
 ```sh
-pip install git+https://github.com/kartava/oxide.py
+pip install oxide.py
 ```
 
 ## Usage
@@ -147,7 +147,7 @@ assert divide(100, 0).map_err(len) == Err(16)
 
 ## Narrowing
 
-Each style narrows both branches of a Result and an Option on mypy, pyright, ty and pyrefly. [tests/test_narrowing.py](tests/test_narrowing.py) proves each one.
+Each style narrows both branches of a Result and an Option on mypy, pyright, ty and pyrefly. [tests/test_narrowing.py](https://github.com/kartava/oxide.py/blob/main/tests/test_narrowing.py) proves each one.
 
 ### `match`
 

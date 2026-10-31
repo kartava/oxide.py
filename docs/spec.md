@@ -2,7 +2,7 @@
 
 ## Problem Statement
 
-A Python developer who wants an absent value or an expected failure in a function's type has no library that works on every type checker. `rustedpy/result` is archived, and its `result.is_ok()` methods narrow nothing. `returns` needs a mypy plugin, so its pyright support is weaker. The developer cannot rely on `match` or `if` to narrow both branches on mypy, pyright, ty and pyrefly alike, and a library with one maintainer can stop at any release.
+A Python developer who wants an absent value or an expected failure in a function's type has no library that works on every type checker. [`rustedpy/result`](https://github.com/rustedpy/result) is archived, and its `result.is_ok()` methods narrow nothing. `returns` needs a mypy plugin, so its pyright support is weaker. The developer cannot rely on `match` or `if` to narrow both branches on mypy, pyright, ty and pyrefly alike, and a library with one maintainer can stop at any release.
 
 ## Solution
 
@@ -26,6 +26,7 @@ The `oxide` package gives an Option (a Some or Nothing) and a Result (an Ok or a
 14. As a caller, I want to install the package from GitHub on Python 3.11 to 3.15, so that I can use it before any release.
 15. As a reader of the repo, I want a README with install steps, one sample and the two narrowing styles, so that I can start without reading the code.
 16. As a contributor, I want one pinned dev group, the pre-commit hook and CI on each PR, so that my change passes the same checks on every supported Python.
+17. As a user of [`rustedpy/result`](https://github.com/rustedpy/result), I want a README table that maps its API to `oxide`, so that I can migrate my code.
 
 ## Implementation Decisions
 
@@ -64,6 +65,6 @@ The `oxide` package gives an Option (a Some or Nothing) and a Result (an Ok or a
 ## Out of Scope
 
 - A PyPI upload, a GitHub release and version `1.0.0`. The release effort adds them in the next PR, after this one merges.
-- Async variants, `Panic`, a pydantic extra, a benchmark and a migration guide from `rustedpy/result`.
+- Async variants, `Panic`, a pydantic extra and a benchmark.
 - `sum`, `product`, ordering, `copy.replace` and iteration over a variant.
 - `TypeIs` free functions, do functions for Option, and `collect` for Option.

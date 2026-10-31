@@ -104,7 +104,7 @@ def load_port(text: str) -> Do[int, LookupError]:
 @pytest.mark.parametrize(
     ("text", "result"),
     [
-        pytest.param("8080", Ok(8080), id="some gives its value"),
+        pytest.param("8080", Ok(8080), id="a some gives its value"),
         pytest.param("x", Err(NO_PORT), id="nothing returns the err"),
     ],
 )

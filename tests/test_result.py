@@ -171,28 +171,28 @@ def test_is_ok_filters_a_list_of_results() -> None:
 
 
 @pytest.mark.parametrize(
-    "result", [pytest.param(Ok(1), id="ok gives its value")]
+    "result", [pytest.param(Ok(1), id="an ok gives its value")]
 )
 def test_unwrap(result: Result[int, str]) -> None:
     assert assert_type(result.unwrap(), int) == 1
 
 
 @pytest.mark.parametrize(
-    "result", [pytest.param(Ok(1), id="ok gives its value")]
+    "result", [pytest.param(Ok(1), id="an ok gives its value")]
 )
 def test_expect(result: Result[int, str]) -> None:
     assert assert_type(result.expect("port"), int) == 1
 
 
 @pytest.mark.parametrize(
-    "result", [pytest.param(Err("x"), id="err gives its error")]
+    "result", [pytest.param(Err("x"), id="an err gives its error")]
 )
 def test_unwrap_err(result: Result[int, str]) -> None:
     assert assert_type(result.unwrap_err(), str) == "x"
 
 
 @pytest.mark.parametrize(
-    "result", [pytest.param(Err("x"), id="err gives its error")]
+    "result", [pytest.param(Err("x"), id="an err gives its error")]
 )
 def test_expect_err(result: Result[int, str]) -> None:
     assert assert_type(result.expect_err("port"), str) == "x"
@@ -201,8 +201,8 @@ def test_expect_err(result: Result[int, str]) -> None:
 @pytest.mark.parametrize(
     ("result", "value"),
     [
-        pytest.param(Ok(1), 1, id="ok gives its value"),
-        pytest.param(Err("x"), None, id="err gives the default"),
+        pytest.param(Ok(1), 1, id="an ok gives its value"),
+        pytest.param(Err("x"), None, id="an err gives the default"),
     ],
 )
 def test_unwrap_or(result: Result[int, str], value: int | None) -> None:
@@ -212,8 +212,10 @@ def test_unwrap_or(result: Result[int, str], value: int | None) -> None:
 @pytest.mark.parametrize(
     ("result", "value"),
     [
-        pytest.param(Ok(1), 1, id="ok gives its value"),
-        pytest.param(Err("abc"), 3, id="err calls the function on its error"),
+        pytest.param(Ok(1), 1, id="an ok gives its value"),
+        pytest.param(
+            Err("abc"), 3, id="an err calls the function on its error"
+        ),
     ],
 )
 def test_unwrap_or_else(result: Result[int, str], value: int) -> None:
@@ -285,8 +287,8 @@ def half(number: int) -> float:
 @pytest.mark.parametrize(
     ("result", "mapped"),
     [
-        pytest.param(Ok(4), Ok(2.0), id="ok maps its value"),
-        pytest.param(Err("x"), Err("x"), id="err stays"),
+        pytest.param(Ok(4), Ok(2.0), id="an ok maps its value"),
+        pytest.param(Err("x"), Err("x"), id="an err stays"),
     ],
 )
 def test_map(result: Result[int, str], mapped: Result[float, str]) -> None:
@@ -296,8 +298,8 @@ def test_map(result: Result[int, str], mapped: Result[float, str]) -> None:
 @pytest.mark.parametrize(
     ("result", "mapped"),
     [
-        pytest.param(Ok(1.5), Ok(1.5), id="ok stays"),
-        pytest.param(Err("abc"), Err(3), id="err maps its error"),
+        pytest.param(Ok(1.5), Ok(1.5), id="an ok stays"),
+        pytest.param(Err("abc"), Err(3), id="an err maps its error"),
     ],
 )
 def test_map_err(
@@ -316,11 +318,11 @@ def halve(number: int) -> Result[float, ValueError]:
 @pytest.mark.parametrize(
     ("result", "chained"),
     [
-        pytest.param(Ok(4), Ok(2.0), id="ok of an even number gives an ok"),
+        pytest.param(Ok(4), Ok(2.0), id="an ok of an even number gives an ok"),
         pytest.param(
-            Ok(3), Err(ODD_NUMBER), id="ok of an odd number gives an err"
+            Ok(3), Err(ODD_NUMBER), id="an ok of an odd number gives an err"
         ),
-        pytest.param(Err("x"), Err("x"), id="err stays"),
+        pytest.param(Err("x"), Err("x"), id="an err stays"),
     ],
 )
 def test_and_then(
@@ -340,10 +342,12 @@ def parse(text: str) -> Result[int, ValueError]:
 @pytest.mark.parametrize(
     ("result", "recovered"),
     [
-        pytest.param(Ok(1), Ok(1), id="ok stays"),
-        pytest.param(Err("8080"), Ok(8080), id="err of a number gives an ok"),
+        pytest.param(Ok(1), Ok(1), id="an ok stays"),
         pytest.param(
-            Err("x"), Err(NOT_A_NUMBER), id="err of a letter gives an err"
+            Err("8080"), Ok(8080), id="an err of a number gives an ok"
+        ),
+        pytest.param(
+            Err("x"), Err(NOT_A_NUMBER), id="an err of a letter gives an err"
         ),
     ],
 )
@@ -404,7 +408,9 @@ def test_flatten_removes_one_level_of_nesting(
             Err("x"),
             id="errs give the first err",
         ),
-        pytest.param([], Ok([]), id="empty list gives an ok of an empty list"),
+        pytest.param(
+            [], Ok([]), id="an empty list gives an ok of an empty list"
+        ),
     ],
 )
 def test_collect(
@@ -423,8 +429,8 @@ def test_partition_gives_the_values_and_the_errors_in_input_order() -> None:
 @pytest.mark.parametrize(
     ("result", "option"),
     [
-        pytest.param(Ok(1), Some(1), id="ok gives a some"),
-        pytest.param(Err("x"), Nothing(), id="err gives nothing"),
+        pytest.param(Ok(1), Some(1), id="an ok gives a some"),
+        pytest.param(Err("x"), Nothing(), id="an err gives nothing"),
     ],
 )
 def test_ok(result: Result[int, str], option: Option[int]) -> None:
@@ -434,8 +440,8 @@ def test_ok(result: Result[int, str], option: Option[int]) -> None:
 @pytest.mark.parametrize(
     ("result", "option"),
     [
-        pytest.param(Ok(1), Nothing(), id="ok gives nothing"),
-        pytest.param(Err("x"), Some("x"), id="err gives a some"),
+        pytest.param(Ok(1), Nothing(), id="an ok gives nothing"),
+        pytest.param(Err("x"), Some("x"), id="an err gives a some"),
     ],
 )
 def test_err(result: Result[int, str], option: Option[str]) -> None:
@@ -446,13 +452,15 @@ def test_err(result: Result[int, str], option: Option[str]) -> None:
     ("result", "option"),
     [
         pytest.param(
-            Ok(Some(1)), Some(Ok(1)), id="ok of a some gives a some of an ok"
+            Ok(Some(1)),
+            Some(Ok(1)),
+            id="an ok of a some gives a some of an ok",
         ),
         pytest.param(
-            Ok(Nothing()), Nothing(), id="ok of nothing gives nothing"
+            Ok(Nothing()), Nothing(), id="an ok of nothing gives nothing"
         ),
         pytest.param(
-            Err("x"), Some(Err("x")), id="err gives a some of the err"
+            Err("x"), Some(Err("x")), id="an err gives a some of the err"
         ),
     ],
 )

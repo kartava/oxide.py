@@ -167,14 +167,14 @@ def test_is_some_filters_a_list_of_options() -> None:
 
 
 @pytest.mark.parametrize(
-    "option", [pytest.param(Some(1), id="some gives its value")]
+    "option", [pytest.param(Some(1), id="a some gives its value")]
 )
 def test_unwrap(option: Option[int]) -> None:
     assert assert_type(option.unwrap(), int) == 1
 
 
 @pytest.mark.parametrize(
-    "option", [pytest.param(Some(1), id="some gives its value")]
+    "option", [pytest.param(Some(1), id="a some gives its value")]
 )
 def test_expect(option: Option[int]) -> None:
     assert assert_type(option.expect("port"), int) == 1
@@ -183,7 +183,7 @@ def test_expect(option: Option[int]) -> None:
 @pytest.mark.parametrize(
     ("option", "value"),
     [
-        pytest.param(Some(1), 1, id="some gives its value"),
+        pytest.param(Some(1), 1, id="a some gives its value"),
         pytest.param(Nothing(), None, id="nothing gives the default"),
     ],
 )
@@ -198,7 +198,7 @@ def default_port() -> int:
 @pytest.mark.parametrize(
     ("option", "value"),
     [
-        pytest.param(Some(1), 1, id="some gives its value"),
+        pytest.param(Some(1), 1, id="a some gives its value"),
         pytest.param(Nothing(), 8080, id="nothing calls the function"),
     ],
 )
@@ -236,7 +236,7 @@ def half(number: int) -> float:
 @pytest.mark.parametrize(
     ("option", "mapped"),
     [
-        pytest.param(Some(4), Some(2.0), id="some maps its value"),
+        pytest.param(Some(4), Some(2.0), id="a some maps its value"),
         pytest.param(Nothing(), Nothing(), id="nothing stays nothing"),
     ],
 )
@@ -252,10 +252,10 @@ def halve(number: int) -> Option[float]:
     ("option", "chained"),
     [
         pytest.param(
-            Some(4), Some(2.0), id="some of an even number gives a some"
+            Some(4), Some(2.0), id="a some of an even number gives a some"
         ),
         pytest.param(
-            Some(3), Nothing(), id="some of an odd number gives nothing"
+            Some(3), Nothing(), id="a some of an odd number gives nothing"
         ),
         pytest.param(Nothing(), Nothing(), id="nothing stays nothing"),
     ],
@@ -272,7 +272,7 @@ def fallback_port() -> Option[int]:
 @pytest.mark.parametrize(
     ("option", "recovered"),
     [
-        pytest.param(Some(1), Some(1), id="some stays"),
+        pytest.param(Some(1), Some(1), id="a some stays"),
         pytest.param(Nothing(), Some(8080), id="nothing calls the function"),
     ],
 )
@@ -306,7 +306,7 @@ NO_PORT = LookupError("no port")
 @pytest.mark.parametrize(
     ("option", "result"),
     [
-        pytest.param(Some(1), Ok(1), id="some gives an ok"),
+        pytest.param(Some(1), Ok(1), id="a some gives an ok"),
         pytest.param(Nothing(), Err(NO_PORT), id="nothing gives an err"),
     ],
 )
@@ -322,7 +322,7 @@ def no_port() -> LookupError:
 @pytest.mark.parametrize(
     ("option", "result"),
     [
-        pytest.param(Some(1), Ok(1), id="some gives an ok"),
+        pytest.param(Some(1), Ok(1), id="a some gives an ok"),
         pytest.param(Nothing(), Err(NO_PORT), id="nothing calls the function"),
     ],
 )
@@ -372,7 +372,7 @@ def test_callback_on_the_other_variant_is_not_called(
 @pytest.mark.parametrize(
     ("option", "value"),
     [
-        pytest.param(Some(1), 1, id="some gives its value"),
+        pytest.param(Some(1), 1, id="a some gives its value"),
         pytest.param(Nothing(), None, id="nothing gives none"),
     ],
 )
@@ -399,10 +399,12 @@ def test_from_optional(value: int | None, option: Option[int]) -> None:
     ("option", "result"),
     [
         pytest.param(
-            Some(Ok(1)), Ok(Some(1)), id="some of an ok gives an ok of a some"
+            Some(Ok(1)),
+            Ok(Some(1)),
+            id="a some of an ok gives an ok of a some",
         ),
         pytest.param(
-            Some(Err("x")), Err("x"), id="some of an err gives the err"
+            Some(Err("x")), Err("x"), id="a some of an err gives the err"
         ),
         pytest.param(
             Nothing(), Ok(Nothing()), id="nothing gives an ok of nothing"

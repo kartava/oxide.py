@@ -2,7 +2,7 @@
 
 ## Context
 
-`oxide.py` v1 ports Rust's `Option<T>` and `Result<T, E>` to Python as the `oxide` package. A function returns an Option or a Result, so that an absent value or an expected failure is part of its type, and a type checker forces the caller to handle it. The design beats the existing libraries on three points: narrowing that each of four checkers proves in both branches, no checker plugin, and a small, pinned and CI-tested codebase. Library callers use it; v1 ends merged on `main`, before any release.
+`oxide.py` v1 ports Rust's `Option<T>` and `Result<T, E>` to Python as the `oxide` package. A function returns an Option or a Result, so that an absent value or an expected failure is part of its type, and a type checker forces the caller to handle it. The design beats the existing libraries on three points: narrowing that each of four checkers proves in both branches, no checker plugin, and a small, pinned and CI-tested codebase. Library callers use it; v1 ships on PyPI ([release.md](release.md)).
 
 ## Constraints
 
@@ -299,7 +299,6 @@ sequenceDiagram
 ```toml
 [project]
 name = "oxide.py"
-version = "0.1.0"
 requires-python = ">=3.11"
 license = "MIT"
 readme = "README.md"
@@ -324,7 +323,7 @@ dev = [
 ]
 ```
 
-`packages` is needed because the distribution name `oxide.py` differs from the import name `oxide`. `typing_extensions` supplies `TypeAliasType` below 3.12 only.
+`packages` is needed because the distribution name `oxide.py` differs from the import name `oxide`. [release.md](release.md) gives the version, the PyPI metadata and the sdist content. `typing_extensions` supplies `TypeAliasType` below 3.12 only.
 
 | Checker | Mode | Target | Paths |
 |---|---|---|---|
@@ -367,7 +366,7 @@ The checker settings live in `pyproject.toml`. pyright also needs `venvPath = ".
 | Tests | Plain pytest; `tests/test_narrowing.py` holds the `assert_type` proofs | Narrowing is a static check, and one file proves each style at runtime and statically. **Gherkin.** Rejected: its steps check runtime behavior only. |
 | CI | pytest on 3.11 to 3.15; one `check` job targeting 3.11 | All four checkers give the same result at 3.11 and 3.14. CI is the only test path below the `.venv` version. A venv with only the package proves the `typing_extensions` marker and `py.typed`, which the dev tools hide. |
 | Updates | Dependabot, weekly with a 7-day cooldown, for the actions and the hooks except Ruff | The Ruff hook moves only together with the Ruff dev pin, so that local Ruff and the hook agree. The dev pins stay manual. |
-| Packaging | `hatchling`, `src/oxide/`, `py.typed`, `0.1.0` | The README install step and CI need a build backend. `0.1.0` leaves `1.0.0` to the release effort. |
+| Packaging | `hatchling`, `src/oxide/`, `py.typed` | The README install step and CI need a build backend. [release.md](release.md) gives the version. |
 | Dev tools | `[dependency-groups] dev` with exact pins | One list serves CI, contributors and `.venv`. |
 | Modules | `_core`, `_do` and `_catch`, re-exported from `__init__` | Option and Result call each other, so they share `_core`, and no import is circular. |
 | README | Install steps, one usage sample, the two styles, a migration table from `rustedpy/result` 0.17.0 | The narrowing tests prove the styles that it lists. `rustedpy/result` is archived, so its users need a table that maps its API to `oxide`. |

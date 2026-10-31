@@ -34,6 +34,7 @@ tests/
   test_catch.py
   test_narrowing.py
 .github/workflows/ci.yml
+.github/dependabot.yml
 README.md
 ```
 
@@ -53,16 +54,20 @@ README.md
 | `py.typed` | marker | the type checkers of callers | — | new |
 | `[project]`, `[build-system]`, `[dependency-groups]`, checker settings | `pyproject.toml` | `pip install`, CI, contributors | — | added next to `[tool.ruff]` |
 | `ci.yml` | CI workflow | each PR and each push to `main` | — | new |
+| `dependabot.yml` | Dependabot config | the maintainer, through weekly PRs | `ci.yml`, `.pre-commit-config.yaml` | new |
 | `README.md` | doc | repo readers; `tests/test_narrowing.py` proves its styles | — | new |
-| The status line, the dev-tools install line and the Ruff `rev` line | `CLAUDE.md` | contributors | `[dependency-groups]` | changed |
+| The status line, the commands and the hook pin rule | `CLAUDE.md` | contributors | `[dependency-groups]` | changed |
+| The upstream hooks, pinned by SHA | `.pre-commit-config.yaml` | contributors, the `check` job | — | changed |
+| The Python entries | `.gitignore` | contributors | — | changed |
+| The Ruff rules, the names and the docstrings | `docs/conventions/` | contributors | — | changed |
 
-New public names: 13. New files: 12. Changed files: `pyproject.toml`, `CLAUDE.md`. The counts are against the effort branch: its first commit, `3d70fd0`, adds `pyproject.toml`, `CLAUDE.md`, `.pre-commit-config.yaml`, `.gitignore` and `docs/conventions/`, which are new against `main` too.
+New public names: 13. New files outside `docs/` and `CONTEXT.md`: 13. Changed files: `pyproject.toml`, `CLAUDE.md`, `.pre-commit-config.yaml`, `.gitignore`, `docs/conventions/python.md` and `docs/conventions/comments.md`. The counts are against the effort branch. Against `main`, which holds only `LICENSE`, every file is new.
 
 Cut review: done 2026-10-31
 
 ## API
 
-The variants are `@final` generic classes with `__slots__`. `T_co` and `E_co` are covariant. `U`, `F` and `D` are plain TypeVars.
+The variants are `@final` classes with `__slots__`. `Ok`, `Err` and `Some` are generic, and `Nothing` is not. `T_co` and `E_co` are covariant. `U`, `F` and `D` are plain TypeVars.
 
 ```python
 @final
@@ -151,6 +156,7 @@ class Some(Generic[T_co]):
 @final
 class Nothing:
     def __new__(cls) -> Nothing: ...
+    def __reduce__(self) -> tuple[type[Nothing], tuple[()]]: ...
     def is_some(self) -> bool: ...
     def is_nothing(self) -> bool: ...
     def expect(self, message: str) -> Never: ...
@@ -238,7 +244,7 @@ match load_port("8080"):
 
 ## Do functions
 
-A do function replaces Rust's `?` ([adr/0001](adr/0001-do-function-with-try-replaces-question-mark.md)). Do functions take Results only: an Option converts first with `ok_or`. `do` raises `TypeError` when it decorates a function that is not a generator function.
+A do function replaces Rust's `?` ([adr/0001](adr/0001-do-function-with-try-replaces-question-mark.md)). Do functions take Results only: an Option converts first with `ok_or`. `do` raises `TypeError` when it decorates a function that is not a generator function, and when the do function yields a value other than an Err.
 
 ```mermaid
 sequenceDiagram
@@ -272,7 +278,9 @@ sequenceDiagram
 | `unwrap()` | `Nothing` | ``called `Option.unwrap()` on a `Nothing` value`` |
 | `expect(message)` | `Nothing` | `{message}` |
 
-`catch` raises `TypeError` at decoration time when it gets no exception type, or `Exception` or `BaseException`. Inside the decorated function, an exception of a listed type becomes an Err, even when a bug raised it. Each other exception propagates unchanged, and so does each exception that a callback raises outside `catch`.
+`catch` raises `TypeError` at decoration time when it gets no exception type, `Exception`, or a value that is not a subclass of `Exception`, such as an instance or `KeyboardInterrupt`. Inside the decorated function, an exception of a listed type becomes an Err, even when a bug raised it. Each other exception propagates unchanged, and so does each exception that a callback raises outside `catch`.
+
+`Err.try_()` raises `RuntimeError` when a caller resumes it after its Err, which happens only outside `@do`.
 
 ## Runtime behavior
 
@@ -282,7 +290,7 @@ sequenceDiagram
 | Equality | The same variant class and equal content: `Ok(1) == Ok(1)`, `Ok(1) != Some(1)`. |
 | Hash | The hash of the variant class and its content. Unhashable content makes the variant unhashable. |
 | `repr` | `Ok(1)`, `Err('empty')`, `Some(None)`, `Nothing()`. |
-| Pickle and copy | Default pickling and `copy.deepcopy` work on the slots. Both rebuild through `__new__`, so `Nothing` keeps one instance. |
+| Pickle and copy | Pickle protocol 2 or later and `copy.deepcopy` work on the slots of `Ok`, `Err` and `Some`. Protocols 0 and 1 raise `TypeError` for a class with `__slots__`. `Nothing.__reduce__` rebuilds through `Nothing()`, so every protocol keeps one instance. |
 | Truth value | None: `bool()` raises `TypeError` ([adr/0003](adr/0003-variants-have-no-truth-value.md)). |
 | Iteration | None: the variants have no `__iter__`. |
 
@@ -325,11 +333,11 @@ dev = [
 | ty | default | 3.11 | `src`, `tests` |
 | pyrefly | default | 3.11 | `src`, `tests` |
 
-The checker settings live in `pyproject.toml`. `--group` needs pip 25.1 or later, and Python 3.11 and 3.12 bundle pip 24.2, so each install upgrades pip first. `ci.yml` runs on each PR and each push to `main`:
+The checker settings live in `pyproject.toml`. pyright also needs `venvPath = "."` and `venv = ".venv"`, because it does not use the Python that runs it. At the pinned versions, each checker reports a missing `match` case and an Err type that `Do[T, E]` leaves out. A check by hand proves it, because the repo holds no committed negative case. `--group` needs pip 25.1 or later, and Python 3.11 and 3.12 bundle pip 24.2, so each install upgrades pip first. `ci.yml` runs on each PR and each push to `main`:
 
 | Job | Python | Steps |
 |---|---|---|
-| `test` | 3.11, 3.12, 3.13, 3.14, 3.15 | Create `.venv`, run `pip install -U pip`, install `-e . --group dev`, run pytest. |
+| `test` | 3.11, 3.12, 3.13, 3.14, 3.15 | Install `.` alone in a separate venv, import `oxide` and find `py.typed`. Create `.venv`, run `pip install -U pip`, install `-e . --group dev`, run pytest. |
 | `check` | 3.14 | Install the same way, run `pre-commit run --all-files`, then the four checkers. |
 
 ## Key Decisions
@@ -341,22 +349,24 @@ The checker settings live in `pyproject.toml`. `--group` needs pip 25.1 or later
 | Attributes | Read-only `value` and `error` properties over slots | A property keeps the class covariant; under PEP 695 a plain attribute is invariant on all four checkers. |
 | Nothing | `Nothing()`, one instance | [adr/0002](adr/0002-nothing-is-a-final-class-singleton.md). |
 | Query methods | `is_ok()`, `is_err()`, `is_some()`, `is_nothing()`, returning `bool` | They keep Rust's names for calls such as `filter(lambda result: result.is_ok(), results)`, and the README says that they narrow nothing. **Rust's `is_none()`.** Rejected: it reads as a check for Python's `None`. |
-| Methods | The extract, transform, collect and convert set in API | Rust's core API sets the v1 scope: `map`, `and_then`, the `unwrap` family, `ok`, `err`, `collect`, `partition`, `transpose`, `flatten`, `from_optional`, `to_optional`. `expect`, `expect_err`, `map_err`, `or_else`, `ok_or` and `ok_or_else` complete Rust's pairs. **All portable Rust methods.** Rejected: twice the size, with no v1 caller for the rest. |
+| Methods | The unwrap, transform, collect and convert set in API | Rust's core API sets the v1 scope: `map`, `and_then`, the `unwrap` family, `ok`, `err`, `collect`, `partition`, `transpose`, `flatten`, `from_optional`, `to_optional`. `expect`, `expect_err`, `map_err`, `or_else`, `ok_or` and `ok_or_else` complete Rust's pairs. **All portable Rust methods.** Rejected: twice the size, with no v1 caller for the rest. |
 | `collect` | Results only | On an empty input, the runtime cannot choose between `Ok([])` and `Some([])`. **One overloaded `collect` for both types.** Rejected: an empty list of Options returns the wrong variant. |
 | Narrowing styles | `match`, `isinstance` | Each narrows both branches on all four checkers. **`TypeIs` free functions.** Rejected: they repeat `isinstance`. **Truthiness.** Rejected: a true `Some(0)` or `Ok([])` hides a bug ([adr/0003](adr/0003-variants-have-no-truth-value.md)). |
 | `?` substitute | Do functions with `try_()`, Results only | [adr/0001](adr/0001-do-function-with-try-replaces-question-mark.md). An Option converts with `ok_or`, which keeps one `Do` alias. |
 | Bugs | No `Panic`; `UnwrapError` for a failed unwrap | Python already propagates each callback exception. **better-result's `Panic`.** Rejected: it wraps every callback to cover one case inside `catch`. |
-| `catch` | 1 to 3 exception types, bound to `Exception`; `TypeError` for `Exception` and `BaseException` | It converts expected exceptions only. **One `*exceptions` signature.** Rejected: mypy widens the union to a common base class. |
+| `catch` | 1 to 3 exception types, bound to `Exception`; `TypeError` for `Exception` and for each value that is not a subclass of it | It converts expected exceptions only. **One `*exceptions` signature.** Rejected: mypy widens the union to a common base class. |
+| Runtime checks | `do` and `catch` raise `TypeError` for input that their annotations reject | A caller with no checker gets an error at the bad call, not a wrong value later: a bare `yield` would return the yielded value as the result, and `catch(KeyboardInterrupt)` would turn Ctrl-C into an Err. **Static checks only.** Rejected: `catch(BaseException)` already needs a runtime check. |
 | `UnwrapError` | No extra attributes; Rust messages with `repr`; `raise from` | No v1 caller reads the variant from the exception, and `raise from` keeps the original traceback. |
 | Docstrings | A public item that carries a fact its name and signature do not: what the call does in each case, what it raises, or a trap | An editor's hover and `help()` are the in-editor docs of a library, and an obvious docstring adds only noise. Ruff checks the form, not the presence: its `D1` rules skip `_` modules. **A docstring on every public item.** Rejected: `value` and `is_ok()` would restate their names. |
-| Runtime | `__slots__`, read-only properties, `==`, `hash`, `repr`, default pickling | Pickle has users in multiprocessing and caches. Without `__hash__`, `__eq__` makes every variant unhashable. **Ordering and `copy.replace`.** Rejected: no v1 caller. **A raising `__setattr__` with `__reduce__`.** Rejected: slots and read-only properties already block public writes, and default pickling works. |
+| Runtime | `__slots__`, read-only properties, `==`, `hash`, `repr`, pickle protocol 2 or later, `Nothing.__reduce__` | Pickle has users in multiprocessing and caches. Pickle protocols 0 and 1 skip `__new__`, so `Nothing` needs `__reduce__` to stay one instance. Without `__hash__`, `__eq__` makes every variant unhashable. **Ordering and `copy.replace`.** Rejected: no v1 caller. **A raising `__setattr__` with `__reduce__` on each variant.** Rejected: slots and read-only properties already block public writes, and the default protocol, which multiprocessing uses, works for `Ok`, `Err` and `Some`. |
 | Async | None in v1 | It would double the API surface. |
 | Cuts | No pydantic extra, benchmark, migration guide, `sum` or `product` | None has a user before a release. The migration guide fits the release effort. |
 | Minimum Python | 3.11, old TypeVar syntax | It reaches the most users. Ruff's `UP046` and `UP047` move the code to PEP 695 when 3.11 reaches end of life. **3.12 or 3.13.** Rejected: they drop 3.11 a year early. |
 | Dependencies | `typing_extensions` below 3.12 only | `TypeAliasType` is the only feature that 3.11 lacks. |
 | Checkers | mypy, pyright, ty, pyrefly, each with an exact pin | Proof on all four is the narrowing point. Exact pins keep a new release of ty, which is pre-1.0, out of CI. |
 | Tests | Plain pytest; `tests/test_narrowing.py` holds the `assert_type` proofs | Narrowing is a static check, and one file proves each style at runtime and statically. **Gherkin.** Rejected: its steps check runtime behavior only. |
-| CI | pytest on 3.11 to 3.15; one `check` job targeting 3.11 | All four checkers gave the same result at 3.11 and 3.14. CI is the only test path below the `.venv` version. |
+| CI | pytest on 3.11 to 3.15; one `check` job targeting 3.11 | All four checkers give the same result at 3.11 and 3.14. CI is the only test path below the `.venv` version. A venv with only the package proves the `typing_extensions` marker and `py.typed`, which the dev tools hide. |
+| Updates | Dependabot, weekly with a 7-day cooldown, for the actions and the hooks except Ruff | The Ruff hook moves only together with the Ruff dev pin, so that local Ruff and the hook agree. The dev pins stay manual. |
 | Packaging | `hatchling`, `src/oxide/`, `py.typed`, `0.1.0` | The README install step and CI need a build backend. `0.1.0` leaves `1.0.0` to the release effort. |
 | Dev tools | `[dependency-groups] dev` with exact pins | One list serves CI, contributors and `.venv`. |
 | Modules | `_core`, `_do` and `_catch`, re-exported from `__init__` | Option and Result call each other, so they share `_core`, and no import is circular. |

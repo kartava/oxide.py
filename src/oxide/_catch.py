@@ -24,33 +24,38 @@ def catch(
     exception_1: type[X1], exception_2: type[X2], exception_3: type[X3], /
 ) -> Callable[[Callable[P, R]], Callable[P, Result[R, X1 | X2 | X3]]]: ...
 def catch(
-    *exceptions: type[BaseException],
-) -> Callable[[Callable[P, R]], Callable[P, Result[R, BaseException]]]:
+    *exceptions: object,
+) -> Callable[[Callable[P, R]], Callable[P, Result[R, Exception]]]:
     """Turn the listed exceptions of a function into an Err.
 
-    Raise `TypeError` for no type, `Exception` or `BaseException`.
+    Raise `TypeError` for no type, for `Exception`, and for a value
+    that is not a subclass of `Exception`.
     """
     if not exceptions:
         raise TypeError("catch() got no exception type")
-    for exception in exceptions:
-        if exception in (Exception, BaseException):
-            raise TypeError(
-                "catch() converts expected exceptions only,"
-                f" not {exception.__name__}"
-            )
+    expected = tuple(_expected(exception) for exception in exceptions)
 
     def decorator(
         function: Callable[P, R],
-    ) -> Callable[P, Result[R, BaseException]]:
+    ) -> Callable[P, Result[R, Exception]]:
         @functools.wraps(function)
-        def wrapper(
-            *args: P.args, **kwargs: P.kwargs
-        ) -> Result[R, BaseException]:
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> Result[R, Exception]:
             try:
                 return Ok(function(*args, **kwargs))
-            except exceptions as error:
+            except expected as error:
                 return Err(error)
 
         return wrapper
 
     return decorator
+
+
+def _expected(exception: object) -> type[Exception]:
+    name = getattr(exception, "__name__", repr(exception))
+    if (
+        isinstance(exception, type)
+        and issubclass(exception, Exception)
+        and exception is not Exception
+    ):
+        return exception
+    raise TypeError(f"catch() converts expected exceptions only, not {name}")

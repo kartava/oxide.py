@@ -1,6 +1,6 @@
 # Variants have no truth value
 
-`bool()` on an `Ok`, `Err`, `Some` or `Nothing` raises `TypeError`, and the message names `match` and `isinstance`. In Python, `if value:` usually asks whether `value` is empty, but `Some(0)`, `Some(None)` and `Ok([])` would be true, so a truthy variant hides bugs. `__bool__` returns `Never`, so pyright reports `if result:` statically, and mypy, ty and pyrefly report it only at runtime.
+`bool()` on an `Ok`, `Err`, `Some` or `Nothing` raises `TypeError`, and the message names `match` and `isinstance`. In Python, `if value:` usually asks whether `value` is empty, but `Some(0)`, `Some(None)` and `Ok([])` would be true, so a truthy variant hides bugs. `__bool__` returns `Never`, so pyright reports `if result:` statically. mypy, ty and pyrefly do not, so the `TypeError` reports it at runtime.
 
 ## Considered Options
 

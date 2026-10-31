@@ -107,12 +107,12 @@ def test_unhashable_content_makes_the_variant_unhashable(
 @pytest.mark.parametrize(
     ("result", "text"),
     [
-        pytest.param(Ok(1), "Ok(1)", id="an ok shows its value"),
+        pytest.param(Ok("x"), "Ok('x')", id="an ok shows its value"),
         pytest.param(Err("x"), "Err('x')", id="an err shows its error"),
     ],
 )
 def test_repr_shows_the_variant_and_content(
-    result: Result[int, str], text: str
+    result: Result[str, str], text: str
 ) -> None:
     assert repr(result) == text
 
@@ -386,20 +386,46 @@ def fail(content: object) -> Never:
 
 
 @pytest.mark.parametrize(
-    ("result", "method"),
+    ("result", "method", "returned"),
     [
-        pytest.param(Err("x"), "map", id="map on an err returns the err"),
-        pytest.param(Ok(1), "map_err", id="map_err on an ok returns the ok"),
         pytest.param(
-            Err("x"), "and_then", id="and_then on an err returns the err"
+            Err("x"), "map", Err("x"), id="map on an err returns the err"
         ),
-        pytest.param(Ok(1), "or_else", id="or_else on an ok returns the ok"),
+        pytest.param(
+            Ok(1), "map_err", Ok(1), id="map_err on an ok returns the ok"
+        ),
+        pytest.param(
+            Err("x"),
+            "and_then",
+            Err("x"),
+            id="and_then on an err returns the err",
+        ),
+        pytest.param(
+            Ok(1), "or_else", Ok(1), id="or_else on an ok returns the ok"
+        ),
+        pytest.param(
+            Ok(1),
+            "unwrap_or_else",
+            1,
+            id="unwrap_or_else on an ok returns the value",
+        ),
     ],
 )
-def test_transform_on_the_other_variant_returns_it_without_a_call(
-    result: Result[int, str], method: str
+def test_callback_on_the_other_variant_is_not_called(
+    result: Result[int, str], method: str, returned: object
 ) -> None:
-    assert methodcaller(method, fail)(result) == result
+    assert methodcaller(method, fail)(result) == returned
+
+
+def test_callback_exception_propagates() -> None:
+    bug = RuntimeError("bug in a callback")
+
+    def double(value: int) -> int:
+        raise bug
+
+    with pytest.raises(RuntimeError) as caught:
+        Ok(1).map(double)
+    assert caught.value is bug
 
 
 @pytest.mark.parametrize(

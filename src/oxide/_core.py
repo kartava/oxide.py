@@ -19,7 +19,10 @@ E_co = TypeVar("E_co", covariant=True)
 
 
 class UnwrapError(Exception):
-    """Report a failed unwrap, such as `unwrap()` on an Err."""
+    """Report a failed unwrap or expect call.
+
+    The `__cause__` holds the error when it is an exception.
+    """
 
 
 def _no_truth_value(variant: str) -> TypeError:
@@ -41,17 +44,11 @@ class Ok(Generic[T_co]):
         return self._value
 
     def is_ok(self) -> bool:
-        """Return `True` for an Ok.
-
-        It does not narrow the Result: use `match` or `isinstance`.
-        """
+        """Narrow nothing: use `match` or `isinstance` instead."""
         return True
 
     def is_err(self) -> bool:
-        """Return `True` for an Err.
-
-        It does not narrow the Result: use `match` or `isinstance`.
-        """
+        """Narrow nothing: use `match` or `isinstance` instead."""
         return False
 
     def expect(self, message: str) -> T_co:
@@ -119,11 +116,11 @@ class Ok(Generic[T_co]):
         return Nothing()
 
     def flatten(self: "Ok[Result[U, F]]") -> "Result[U, F]":
-        """Remove one layer from a Result of a Result."""
+        """Return the inner Result of an Ok. Keep an Err."""
         return self._value
 
     def transpose(self: "Ok[Option[U]]") -> "Option[Ok[U]]":
-        """Turn a Result of an Option into an Option of a Result."""
+        """Swap the layers: an Ok of a Some becomes a Some of an Ok."""
         return self._value.map(Ok)
 
     def try_(self) -> Generator[Never, Any, T_co]:
@@ -131,8 +128,7 @@ class Ok(Generic[T_co]):
 
         Use it only in a generator function under `@do`.
         """
-        # `yield from ()` makes this a generator that yields nothing.
-        # A `yield from` on it then gives the return value.
+        # `yield from ()` makes a generator that only returns the value.
         yield from ()
         return self._value
 
@@ -167,17 +163,11 @@ class Err(Generic[E_co]):
         return self._error
 
     def is_ok(self) -> bool:
-        """Return `True` for an Ok.
-
-        It does not narrow the Result: use `match` or `isinstance`.
-        """
+        """Narrow nothing: use `match` or `isinstance` instead."""
         return False
 
     def is_err(self) -> bool:
-        """Return `True` for an Err.
-
-        It does not narrow the Result: use `match` or `isinstance`.
-        """
+        """Narrow nothing: use `match` or `isinstance` instead."""
         return True
 
     def expect(self, message: str) -> Never:
@@ -245,11 +235,11 @@ class Err(Generic[E_co]):
         return Some(self._error)
 
     def flatten(self) -> "Err[E_co]":
-        """Remove one layer from a Result of a Result."""
+        """Return the inner Result of an Ok. Keep an Err."""
         return self
 
     def transpose(self) -> "Some[Err[E_co]]":
-        """Turn a Result of an Option into an Option of a Result."""
+        """Swap the layers: an Ok of a Some becomes a Some of an Ok."""
         return Some(self)
 
     def try_(self) -> Generator["Err[E_co]", Any, Never]:
@@ -283,7 +273,10 @@ class Err(Generic[E_co]):
 
 @final
 class Some(Generic[T_co]):
-    """Hold the value of an Option."""
+    """Hold the value of an Option.
+
+    `Some(None)` is a Some, not Nothing.
+    """
 
     __slots__ = ("_value",)
     __match_args__ = ("value",)
@@ -296,17 +289,11 @@ class Some(Generic[T_co]):
         return self._value
 
     def is_some(self) -> bool:
-        """Return `True` for a Some.
-
-        It does not narrow the Option: use `match` or `isinstance`.
-        """
+        """Narrow nothing: use `match` or `isinstance` instead."""
         return True
 
     def is_nothing(self) -> bool:
-        """Return `True` for Nothing.
-
-        It does not narrow the Option: use `match` or `isinstance`.
-        """
+        """Narrow nothing: use `match` or `isinstance` instead."""
         return False
 
     def expect(self, message: str) -> T_co:
@@ -352,11 +339,11 @@ class Some(Generic[T_co]):
         return Ok(self._value)
 
     def flatten(self: "Some[Option[U]]") -> "Option[U]":
-        """Remove one layer from an Option of an Option."""
+        """Return the inner Option of a Some. Keep Nothing."""
         return self._value
 
     def transpose(self: "Some[Result[U, F]]") -> "Result[Some[U], F]":
-        """Turn an Option of a Result into a Result of an Option."""
+        """Swap the layers: a Some of an Ok becomes an Ok of a Some."""
         return self._value.map(Some)
 
     def to_optional(self) -> T_co:
@@ -395,17 +382,11 @@ class Nothing:
         return (Nothing, ())
 
     def is_some(self) -> bool:
-        """Return `True` for a Some.
-
-        It does not narrow the Option: use `match` or `isinstance`.
-        """
+        """Narrow nothing: use `match` or `isinstance` instead."""
         return False
 
     def is_nothing(self) -> bool:
-        """Return `True` for Nothing.
-
-        It does not narrow the Option: use `match` or `isinstance`.
-        """
+        """Narrow nothing: use `match` or `isinstance` instead."""
         return True
 
     def expect(self, message: str) -> Never:
@@ -451,11 +432,11 @@ class Nothing:
         return Err(function())
 
     def flatten(self) -> "Nothing":
-        """Remove one layer from an Option of an Option."""
+        """Return the inner Option of a Some. Keep Nothing."""
         return self
 
     def transpose(self) -> "Ok[Nothing]":
-        """Turn an Option of a Result into a Result of an Option."""
+        """Swap the layers: a Some of an Ok becomes an Ok of a Some."""
         return Ok(self)
 
     def to_optional(self) -> None:
@@ -487,7 +468,7 @@ def collect(items: Iterable[Result[T, E]]) -> Result[list[T], E]:
 
 
 def partition(items: Iterable[Result[T, E]]) -> tuple[list[T], list[E]]:
-    """Return the values and the errors as two lists, in input order."""
+    """Return the values and the errors, each in input order."""
     values: list[T] = []
     errors: list[E] = []
     for item in items:

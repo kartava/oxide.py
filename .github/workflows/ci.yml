@@ -21,6 +21,11 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: ${{ matrix.python-version }}
+      - run: python3 -m venv "$RUNNER_TEMP/package"
+      - run: '"$RUNNER_TEMP/package/bin/python" -m pip install .'
+      - run: >-
+          "$RUNNER_TEMP/package/bin/python" -c "import importlib.resources;
+          assert importlib.resources.files('oxide').joinpath('py.typed').is_file()"
       - run: python3 -m venv .venv
       - run: .venv/bin/python -m pip install -U pip
       - run: .venv/bin/python -m pip install -e . --group dev

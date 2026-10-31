@@ -56,8 +56,6 @@ from oxide import (
 )
 ```
 
-[Back to contents](#usage)
-
 ## Quick start
 
 A function returns `Ok(value)` on success, or `Err(error)` on an expected failure. The caller handles both with `match`.
@@ -80,8 +78,6 @@ match parse_port("8080"):
 ```
 
 The sample prints `port 8080`. For `"x"` it prints `error: not a number: x`. A type checker knows that `port` is an `int` and `error` is a `str`.
-
-[Back to contents](#usage)
 
 ## Option
 
@@ -106,8 +102,6 @@ assert divide(100, 0).map(str) == Nothing()
 - A `Some` can hold `None`: `Some(None)` is a `Some`, not `Nothing`.
 - `Nothing()` always returns the same instance.
 
-[Back to contents](#usage)
-
 ## Result
 
 A Result is either `Ok(value)` or `Err(error)`. An `Err` holds an expected failure: a string, an enum member or an exception.
@@ -131,8 +125,6 @@ assert divide(100, 0).map_err(len) == Err(16)
 
 - `unwrap()` and `expect(message)` raise `UnwrapError` on an `Err`.
 - `unwrap_err()` and `expect_err(message)` raise `UnwrapError` on an `Ok`.
-
-[Back to contents](#usage)
 
 ## Narrowing
 
@@ -194,8 +186,6 @@ A variant has no truth value: `bool()` on an `Ok`, `Err`, `Some` or `Nothing` ra
 
 `is_ok()`, `is_err()`, `is_some()` and `is_nothing()` return `bool` and narrow nothing: a method cannot narrow its own `self` ([PEP 742](https://peps.python.org/pep-0742/)). After `if result.is_ok():`, `result` stays a `Result[int, str]`. Use them where a `bool` is enough, as in `filter(lambda result: result.is_ok(), results)`.
 
-[Back to contents](#usage)
-
 ## Chaining
 
 `and_then` runs the next step on an `Ok`, and `or_else` recovers from an `Err`. Each callback runs on its own variant only.
@@ -226,8 +216,6 @@ assert parse("x").or_else(default_port) == Ok(80)
 
 `and_then` keeps every error type. On a `Result[int, str]`, `and_then` with a function that returns `Result[float, ValueError]` gives a `Result[float, str | ValueError]`. Option has `map`, `and_then` and `or_else` too.
 
-[Back to contents](#usage)
-
 ## Converting
 
 ```python
@@ -246,8 +234,6 @@ assert Nothing().ok_or("no port") == Err("no port")
 ```
 
 `Nothing().to_optional()` is `None`. So is `Some(None).to_optional()`, because a `T | None` cannot tell `Some(None)` from `Nothing()`. `ok_or_else` builds the error with a function, only for `Nothing`.
-
-[Back to contents](#usage)
 
 ## Nesting
 
@@ -289,8 +275,6 @@ assert Some(Some(5)).flatten() == Some(5)
 assert Ok(Err("closed")).flatten() == Err("closed")
 ```
 
-[Back to contents](#usage)
-
 ## Collections
 
 `collect` gives all the values, or the first `Err`. `partition` keeps every value and every error, in input order.
@@ -304,8 +288,6 @@ assert collect([Ok(1), Ok(2)]) == Ok([1, 2])
 assert collect(results) == Err("x")
 assert partition(results) == ([1, 2], ["x", "y"])
 ```
-
-[Back to contents](#usage)
 
 ## Catching exceptions
 
@@ -328,18 +310,16 @@ checked: Result[int, KeyError | ValueError] = price("apple", "2")
 ```
 
 - `catch` takes one to three exception types, and the `Err` type is their union.
-- `catch()`, `catch(Exception)` and `catch(BaseException)` raise `TypeError`: `catch` converts expected exceptions only.
+- `catch()`, `catch(Exception)`, and a value that is not a subclass of `Exception`, such as `KeyboardInterrupt`, raise `TypeError`: `catch` converts expected exceptions only.
 - Inside the decorated function, a listed exception becomes an `Err` even when a bug raised it.
-
-[Back to contents](#usage)
 
 ## Do functions
 
 A function that runs several steps must stop at the first `Err`. Here are three ways to write the same `load_port`:
 
-- `load_port_by_hand` checks each step and returns the `Err` early.
+- `load_port_by_hand` tests each step with `isinstance` and returns the `Err` early.
 - `load_port_chained` passes the value of each step to the next with `and_then`.
-- `load_port` is a do function. It reads like the version by hand, without the checks.
+- `load_port` is a do function. It reads like the version by hand, without the `isinstance` branches.
 
 ```python
 from oxide import Do, Err, Ok, Result, do
@@ -408,9 +388,8 @@ assert address("db") == Err("unknown service: db")
 
 - `Do[T, E]` is the return annotation: `T` is the value of the final `Ok`, and `E` is the union of the `Err` types. Each type checker reports an `Err` type that `E` leaves out.
 - A do function takes Results only. An Option enters it through `ok_or`.
+- A `yield` of a value other than an `Err` raises `TypeError`. Write `yield from result.try_()`.
 - On an `Err`, `@do` closes the generator, so each `finally` block runs.
-
-[Back to contents](#usage)
 
 ## Unwrap errors
 
@@ -425,5 +404,3 @@ except UnwrapError as error:
     assert str(error).startswith("called `Result.unwrap()` on an `Err` value")
     assert isinstance(error.__cause__, ValueError)
 ```
-
-[Back to contents](#usage)

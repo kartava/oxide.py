@@ -1,6 +1,6 @@
 # A do function with `try_()` replaces Rust's `?`
 
-Python has no `?` operator. A do function, a generator function under `@do`, takes its place: `value = yield from result.try_()` gives the value of an Ok, or returns the Err from the function. mypy, pyright, ty and pyrefly infer `value` and report each Err type that the annotation `Do[T, E]` leaves out.
+A do function, a generator function under `@do`, replaces Rust's `?` operator, which Python lacks: `value = yield from result.try_()` gives the value of an Ok, or returns the Err from the function. mypy, pyright, ty and pyrefly infer `value` and report each Err type that the annotation `Do[T, E]` leaves out.
 
 ## Considered Options
 

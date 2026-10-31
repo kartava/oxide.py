@@ -1,6 +1,6 @@
 import copy
 import pickle
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from operator import methodcaller
 from typing import Never, assert_type
 from unittest.mock import ANY
@@ -44,6 +44,17 @@ def test_pickle_round_trips_a_some() -> None:
 
 def test_deepcopy_round_trips_a_some() -> None:
     assert copy.deepcopy(Some([1])) == Some([1])
+
+
+@pytest.mark.parametrize(
+    "option",
+    [
+        pytest.param(Some([1]), id="a some is not iterable"),
+        pytest.param(Nothing(), id="nothing is not iterable"),
+    ],
+)
+def test_variant_is_not_iterable(option: Option[list[int]]) -> None:
+    assert not isinstance(option, Iterable)
 
 
 @pytest.mark.parametrize(
@@ -94,13 +105,13 @@ def test_unhashable_content_makes_a_some_unhashable() -> None:
 @pytest.mark.parametrize(
     ("option", "text"),
     [
-        pytest.param(Some(1), "Some(1)", id="a some shows its value"),
+        pytest.param(Some("x"), "Some('x')", id="a some shows its value"),
         pytest.param(Some(None), "Some(None)", id="a some of none shows none"),
         pytest.param(Nothing(), "Nothing()", id="nothing shows no value"),
     ],
 )
 def test_repr_shows_the_variant_and_content(
-    option: Option[int | None], text: str
+    option: Option[str | None], text: str
 ) -> None:
     assert repr(option) == text
 
@@ -134,12 +145,6 @@ def test_assignment_raises_attribute_error(
 def test_option_is_covariant(option: Option[bool]) -> None:
     widened: Option[int] = option
     assert widened is option
-
-
-def test_some_of_none_is_a_some() -> None:
-    option: Option[None] = Some(None)
-    assert isinstance(option, Some)
-    assert option != Nothing()
 
 
 @pytest.mark.parametrize(
@@ -374,6 +379,12 @@ def fail(*contents: object) -> Never:
             Ok(1),
             id="ok_or_else on a some returns an ok",
         ),
+        pytest.param(
+            Some(1),
+            "unwrap_or_else",
+            1,
+            id="unwrap_or_else on a some returns the value",
+        ),
     ],
 )
 def test_callback_on_the_other_variant_is_not_called(
@@ -382,19 +393,27 @@ def test_callback_on_the_other_variant_is_not_called(
     assert methodcaller(method, fail)(option) == returned
 
 
+def test_callback_exception_propagates() -> None:
+    bug = RuntimeError("bug in a callback")
+
+    def double(value: int) -> int:
+        raise bug
+
+    with pytest.raises(RuntimeError) as caught:
+        Some(1).map(double)
+    assert caught.value is bug
+
+
 @pytest.mark.parametrize(
     ("option", "value"),
     [
         pytest.param(Some(1), 1, id="a some gives its value"),
+        pytest.param(Some(None), None, id="a some of none gives none"),
         pytest.param(Nothing(), None, id="nothing gives none"),
     ],
 )
 def test_to_optional(option: Option[int], value: int | None) -> None:
     assert assert_type(option.to_optional(), int | None) == value
-
-
-def test_to_optional_of_some_none_is_none() -> None:
-    assert Some(None).to_optional() is None
 
 
 @pytest.mark.parametrize(

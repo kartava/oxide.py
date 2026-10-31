@@ -64,11 +64,19 @@ def test_catch_types_the_error_with_the_union_of_its_exceptions(
             "not BaseException",
             id="base exception is rejected",
         ),
+        pytest.param(
+            (KeyboardInterrupt,),
+            "not KeyboardInterrupt",
+            id="keyboard interrupt is rejected",
+        ),
+        pytest.param(
+            (ValueError, ValueError("x")),
+            r"not ValueError\('x'\)",
+            id="an exception instance is rejected",
+        ),
     ],
 )
-def test_catch(
-    exceptions: tuple[type[BaseException], ...], message: str
-) -> None:
+def test_catch(exceptions: tuple[object, ...], message: str) -> None:
     unchecked_catch = cast("Callable[..., object]", catch)
     with pytest.raises(TypeError, match=message):
         unchecked_catch(*exceptions)

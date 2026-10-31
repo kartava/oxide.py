@@ -1,6 +1,6 @@
 import inspect
 from collections.abc import Callable
-from typing import assert_type
+from typing import Any, assert_type
 
 import pytest
 
@@ -31,7 +31,7 @@ def test_do_function_returns_ok_of_its_return_value() -> None:
 
 
 @pytest.mark.parametrize(
-    ("text", "error"),
+    ("text", "result"),
     [
         pytest.param(
             "x",
@@ -46,9 +46,10 @@ def test_do_function_returns_ok_of_its_return_value() -> None:
     ],
 )
 def test_do_function_returns_the_err_of_the_first_failed_step(
-    text: str, error: Result[str, ValueError | str]
+    text: str, result: Result[str, ValueError | str]
 ) -> None:
-    assert load_address(text) == error
+    load: Callable[[str], Result[str, ValueError | str]] = load_address
+    assert load(text) == result
 
 
 def test_do_closes_the_generator_on_an_err() -> None:
@@ -77,9 +78,23 @@ def test_do_rejects_a_function_that_is_not_a_generator_function() -> None:
         do(delegate)
 
 
-def test_do_function_returns_the_error_union_of_its_annotation() -> None:
-    load: Callable[[str], Result[str, ValueError | str]] = load_address
-    assert load("x") == Err(NOT_A_NUMBER)
+def test_do_rejects_a_yield_that_is_not_an_err() -> None:
+    port: Any = 8080
+
+    @do
+    def load() -> Do[int, str]:
+        yield port
+        return 1
+
+    with pytest.raises(TypeError, match="yielded 8080, not an Err"):
+        load()
+
+
+def test_try_resumed_after_an_err_raises() -> None:
+    steps = Err("x").try_()
+    assert next(steps) == Err("x")
+    with pytest.raises(RuntimeError, match="resumed after an Err"):
+        next(steps)
 
 
 def test_do_function_keeps_its_parameters() -> None:

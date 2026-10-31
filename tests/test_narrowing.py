@@ -4,7 +4,7 @@ import pytest
 
 from oxide import Err, Nothing, Ok, Option, Result, Some
 
-each_variant = pytest.mark.parametrize(
+each_result = pytest.mark.parametrize(
     ("text", "description"),
     [
         pytest.param("8080", "value 8080", id="an ok takes the ok branch"),
@@ -48,14 +48,27 @@ def describe_by_isinstance(result: Result[int, str]) -> str:
     return f"error {result.error}"
 
 
-@each_variant
+@each_result
 def test_match_narrows_both_branches(text: str, description: str) -> None:
     assert describe_by_match(parse(text)) == description
 
 
-@each_variant
+@each_result
 def test_isinstance_narrows_both_branches(text: str, description: str) -> None:
     assert describe_by_isinstance(parse(text)) == description
+
+
+def describe_by_is_ok(result: Result[int, str]) -> str:
+    if result.is_ok():
+        assert_type(result, Result[int, str])
+        return f"value {result.unwrap()}"
+    assert_type(result, Result[int, str])
+    return f"error {result.unwrap_err()}"
+
+
+@each_result
+def test_is_ok_narrows_nothing(text: str, description: str) -> None:
+    assert describe_by_is_ok(parse(text)) == description
 
 
 def describe_option_by_match(option: Option[int]) -> str:

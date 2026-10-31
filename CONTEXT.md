@@ -40,7 +40,7 @@ To take the value out of a Some or an Ok. On the other variant, unwrap raises.
 _Avoid_: get (it suggests a default of `None`), extract
 
 **Do function**:
-A generator function under `@do`. In it, `yield from r.try_()` gives the value of an Ok, or returns the Err from the function.
+A generator function under `@do`. In it, `yield from result.try_()` gives the value of an Ok, or returns the Err from the function.
 _Avoid_: effect (Expression's word), try block (Python's `try`)
 
 **Narrowing style**:

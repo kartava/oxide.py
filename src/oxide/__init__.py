@@ -1,3 +1,3 @@
-from oxide._core import Err, Ok, Result
+from oxide._core import Err, Ok, Result, UnwrapError
 
-__all__ = ["Err", "Ok", "Result"]
+__all__ = ["Err", "Ok", "Result", "UnwrapError"]

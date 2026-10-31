@@ -161,7 +161,89 @@ class Err(Generic[E_co]):
         return False
 
 
+@final
+class Some(Generic[T_co]):
+    __slots__ = ("_value",)
+    __match_args__ = ("value",)
+
+    def __init__(self, value: T_co) -> None:
+        self._value = value
+
+    @property
+    def value(self) -> T_co:
+        return self._value
+
+    def is_some(self) -> bool:
+        return True
+
+    def is_nothing(self) -> bool:
+        return False
+
+    def expect(self, message: str) -> T_co:
+        return self._value
+
+    def unwrap(self) -> T_co:
+        return self._value
+
+    def unwrap_or(self, default: object) -> T_co:
+        return self._value
+
+    def unwrap_or_else(self, function: Callable[[], object]) -> T_co:
+        return self._value
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Some):
+            return NotImplemented
+        # isinstance gives `Some[Unknown]`. Strict pyright rejects it.
+        return self._value == cast("Some[object]", other)._value
+
+    def __hash__(self) -> int:
+        return hash((Some, self._value))
+
+    def __repr__(self) -> str:
+        return f"Some({self._value!r})"
+
+    def __bool__(self) -> Literal[True]:
+        return True
+
+
+@final
+class Nothing:
+    __slots__ = ()
+
+    def __new__(cls) -> "Nothing":
+        return _NOTHING
+
+    def is_some(self) -> bool:
+        return False
+
+    def is_nothing(self) -> bool:
+        return True
+
+    def expect(self, message: str) -> Never:
+        raise UnwrapError(message)
+
+    def unwrap(self) -> Never:
+        raise UnwrapError("called `Option.unwrap()` on a `Nothing` value")
+
+    def unwrap_or(self, default: D) -> D:
+        return default
+
+    def unwrap_or_else(self, function: Callable[[], D]) -> D:
+        return function()
+
+    def __repr__(self) -> str:
+        return "Nothing()"
+
+    def __bool__(self) -> Literal[False]:
+        return False
+
+
+_NOTHING = object.__new__(Nothing)
+
+
 Result: TypeAlias = Ok[T] | Err[E]
+Option: TypeAlias = Some[T] | Nothing
 
 
 def collect(items: Iterable[Result[T, E]]) -> Result[list[T], E]:

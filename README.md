@@ -2,7 +2,7 @@
 
 [Rust](https://www.rust-lang.org)'s `Option<T>` and `Result<T, E>`, implemented for Python. A function returns one of them, so that an absent value or an expected failure is part of its type.
 
-- `match`, `isinstance` and `if result:` narrow both branches on mypy, pyright, ty and pyrefly.
+- `match` and `isinstance` narrow both branches on mypy, pyright, ty and pyrefly.
 - No type-checker plugin and no config.
 - No dependencies from Python 3.12. Python 3.11 needs `typing_extensions`.
 
@@ -186,25 +186,9 @@ def describe_option(option: Option[int]) -> str:
     return "nothing"
 ```
 
-### Truthiness
+### No truth value
 
-`Ok` and `Some` are true, and `Err` and `Nothing` are false. Truthiness tests the variant, not the content: `Some(0)`, `Some(None)` and `Ok([])` are true.
-
-```python
-from oxide import Option, Result
-
-
-def describe(result: Result[int, str]) -> str:
-    if result:
-        return f"value {result.value}"
-    return f"error {result.error}"
-
-
-def describe_option(option: Option[int]) -> str:
-    if option:
-        return f"value {option.value}"
-    return "nothing"
-```
+A variant has no truth value: `bool()` on an `Ok`, `Err`, `Some` or `Nothing` raises `TypeError`, so `if result:` fails loudly. In Python, `if value:` asks whether `value` is empty, and a true `Some(0)` or `Ok([])` would hide a bug. pyright reports `if result:` before the code runs. mypy, ty and pyrefly do not, so the `TypeError` reports it at runtime.
 
 ### Query methods
 
@@ -373,7 +357,7 @@ def check_range(port: int) -> Result[int, str]:
 
 def load_port_by_hand(text: str) -> Result[int, str]:
     parsed = parse_port(text)
-    if not parsed:
+    if isinstance(parsed, Err):
         return parsed
     return check_range(parsed.value)
 

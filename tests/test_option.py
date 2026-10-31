@@ -136,18 +136,24 @@ def test_some_of_none_is_a_some() -> None:
 
 
 @pytest.mark.parametrize(
-    ("option", "truth"),
+    ("option", "message"),
     [
-        pytest.param(Some(0), True, id="a some of zero is true"),
-        pytest.param(Some(None), True, id="a some of none is true"),
-        pytest.param(Some([]), True, id="a some of an empty list is true"),
-        pytest.param(Nothing(), False, id="nothing is false"),
+        pytest.param(
+            Some(1),
+            "Some has no truth value. Use match or isinstance.",
+            id="bool of a some raises",
+        ),
+        pytest.param(
+            Nothing(),
+            "Nothing has no truth value. Use match or isinstance.",
+            id="bool of nothing raises",
+        ),
     ],
 )
-def test_truthiness_tests_the_variant_not_the_content(
-    option: Option[object], truth: bool
-) -> None:
-    assert bool(option) is truth
+def test_bool_raises_type_error(option: Option[int], message: str) -> None:
+    with pytest.raises(TypeError) as caught:
+        bool(option)
+    assert caught.value.args == (message,)
 
 
 def test_is_some() -> None:

@@ -118,6 +118,29 @@ def test_repr_shows_the_variant_and_content(
 
 
 @pytest.mark.parametrize(
+    ("result", "message"),
+    [
+        pytest.param(
+            Ok(1),
+            "Ok has no truth value. Use match or isinstance.",
+            id="bool of an ok raises",
+        ),
+        pytest.param(
+            Err("x"),
+            "Err has no truth value. Use match or isinstance.",
+            id="bool of an err raises",
+        ),
+    ],
+)
+def test_bool_raises_type_error(
+    result: Result[int, str], message: str
+) -> None:
+    with pytest.raises(TypeError) as caught:
+        bool(result)
+    assert caught.value.args == (message,)
+
+
+@pytest.mark.parametrize(
     "result",
     [
         pytest.param(Ok([1]), id="an ok round trips"),

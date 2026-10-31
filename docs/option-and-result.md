@@ -91,7 +91,7 @@ class Ok(Generic[T_co]):
     def flatten(self: Ok[Result[U, F]]) -> Result[U, F]: ...
     def transpose(self: Ok[Option[U]]) -> Option[Ok[U]]: ...
     def try_(self) -> Generator[Never, Any, T_co]: ...
-    def __bool__(self) -> Literal[True]: ...
+    def __bool__(self) -> Never: ...
 
 
 @final
@@ -120,7 +120,7 @@ class Err(Generic[E_co]):
     def flatten(self) -> Err[E_co]: ...
     def transpose(self) -> Some[Err[E_co]]: ...
     def try_(self) -> Generator[Err[E_co], Any, Never]: ...
-    def __bool__(self) -> Literal[False]: ...
+    def __bool__(self) -> Never: ...
 ```
 
 ```python
@@ -145,7 +145,7 @@ class Some(Generic[T_co]):
     def flatten(self: Some[Option[U]]) -> Option[U]: ...
     def transpose(self: Some[Result[U, F]]) -> Result[Some[U], F]: ...
     def to_optional(self) -> T_co: ...
-    def __bool__(self) -> Literal[True]: ...
+    def __bool__(self) -> Never: ...
 
 
 @final
@@ -165,7 +165,7 @@ class Nothing:
     def flatten(self) -> Nothing: ...
     def transpose(self) -> Ok[Nothing]: ...
     def to_optional(self) -> None: ...
-    def __bool__(self) -> Literal[False]: ...
+    def __bool__(self) -> Never: ...
 ```
 
 ```python
@@ -227,15 +227,14 @@ match load_port("8080"):
 
 ## Narrowing styles
 
-`README.md` lists these three styles, and `tests/test_narrowing.py` proves each one in both branches, on Result and Option, at runtime and on each of the four checkers.
+`README.md` lists these two styles, and `tests/test_narrowing.py` proves each one in both branches, on Result and Option, at runtime and on each of the four checkers.
 
 | Style | Result | Option |
 |---|---|---|
 | `match`, the primary style | `case Ok(value):`, `case Err(error):`, then `assert_never` | `case Some(value):`, `case Nothing():`, then `assert_never` |
 | `isinstance` | `isinstance(result, Ok)` | `isinstance(option, Some)` |
-| Truthiness | `if result:` | `if option:` |
 
-`is_ok()`, `is_err()`, `is_some()` and `is_nothing()` return `bool` and narrow nothing. A method cannot narrow its own `self` (PEP 742), and the README says so. Truthiness tests the variant, not the content: `Some(0)`, `Some(None)` and `Ok([])` are true, and the README says so too.
+`is_ok()`, `is_err()`, `is_some()` and `is_nothing()` return `bool` and narrow nothing. A method cannot narrow its own `self` (PEP 742), and the README says so. A variant has no truth value: `bool()` raises `TypeError` ([adr/0003](adr/0003-variants-have-no-truth-value.md)).
 
 ## Do functions
 
@@ -284,6 +283,7 @@ sequenceDiagram
 | Hash | The hash of the variant class and its content. Unhashable content makes the variant unhashable. |
 | `repr` | `Ok(1)`, `Err('empty')`, `Some(None)`, `Nothing()`. |
 | Pickle and copy | Default pickling and `copy.deepcopy` work on the slots. Both rebuild through `__new__`, so `Nothing` keeps one instance. |
+| Truth value | None: `bool()` raises `TypeError` ([adr/0003](adr/0003-variants-have-no-truth-value.md)). |
 | Iteration | None: the variants have no `__iter__`. |
 
 ## Packaging and CI
@@ -343,7 +343,7 @@ The checker settings live in `pyproject.toml`. `--group` needs pip 25.1 or later
 | Query methods | `is_ok()`, `is_err()`, `is_some()`, `is_nothing()`, returning `bool` | They keep Rust's names for calls such as `filter(lambda result: result.is_ok(), results)`, and the README says that they narrow nothing. **Rust's `is_none()`.** Rejected: it reads as a check for Python's `None`. |
 | Methods | The extract, transform, collect and convert set in API | Rust's core API sets the v1 scope: `map`, `and_then`, the `unwrap` family, `ok`, `err`, `collect`, `partition`, `transpose`, `flatten`, `from_optional`, `to_optional`. `expect`, `expect_err`, `map_err`, `or_else`, `ok_or` and `ok_or_else` complete Rust's pairs. **All portable Rust methods.** Rejected: twice the size, with no v1 caller for the rest. |
 | `collect` | Results only | On an empty input, the runtime cannot choose between `Ok([])` and `Some([])`. **One overloaded `collect` for both types.** Rejected: an empty list of Options returns the wrong variant. |
-| Narrowing styles | `match`, `isinstance`, truthiness | Each narrows both branches on all four checkers. **`TypeIs` free functions.** Rejected: they repeat `isinstance`. **No `__bool__`.** Rejected: `if parse(text):` would then always be true. |
+| Narrowing styles | `match`, `isinstance` | Each narrows both branches on all four checkers. **`TypeIs` free functions.** Rejected: they repeat `isinstance`. **Truthiness.** Rejected: a true `Some(0)` or `Ok([])` hides a bug ([adr/0003](adr/0003-variants-have-no-truth-value.md)). |
 | `?` substitute | Do functions with `try_()`, Results only | [adr/0001](adr/0001-do-function-with-try-replaces-question-mark.md). An Option converts with `ok_or`, which keeps one `Do` alias. |
 | Bugs | No `Panic`; `UnwrapError` for a failed unwrap | Python already propagates each callback exception. **better-result's `Panic`.** Rejected: it wraps every callback to cover one case inside `catch`. |
 | `catch` | 1 to 3 exception types, bound to `Exception`; `TypeError` for `Exception` and `BaseException` | It converts expected exceptions only. **One `*exceptions` signature.** Rejected: mypy widens the union to a common base class. |
@@ -360,7 +360,7 @@ The checker settings live in `pyproject.toml`. `--group` needs pip 25.1 or later
 | Packaging | `hatchling`, `src/oxide/`, `py.typed`, `0.1.0` | The README install step and CI need a build backend. `0.1.0` leaves `1.0.0` to the release effort. |
 | Dev tools | `[dependency-groups] dev` with exact pins | One list serves CI, contributors and `.venv`. |
 | Modules | `_core`, `_do` and `_catch`, re-exported from `__init__` | Option and Result call each other, so they share `_core`, and no import is circular. |
-| README | Install steps, one usage sample, the three styles | The narrowing tests prove the styles that it lists. |
+| README | Install steps, one usage sample, the two styles | The narrowing tests prove the styles that it lists. |
 
 ## Unresolved Questions
 

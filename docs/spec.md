@@ -6,14 +6,14 @@ A Python developer who wants an absent value or an expected failure in a functio
 
 ## Solution
 
-The `oxide` package gives an Option (a Some or Nothing) and a Result (an Ok or an Err), in the terms of [CONTEXT.md](../CONTEXT.md). Each is a closed union, so `match`, `isinstance` and `if result:` narrow both branches on all four checkers, with no plugin and no config. A do function replaces Rust's `?`, and `@catch` turns the expected exceptions of a raising function into an Err. The codebase stays small, pins its tools, and CI tests it on Python 3.11 to 3.15.
+The `oxide` package gives an Option (a Some or Nothing) and a Result (an Ok or an Err), in the terms of [CONTEXT.md](../CONTEXT.md). Each is a closed union, so `match` and `isinstance` narrow both branches on all four checkers, with no plugin and no config. A do function replaces Rust's `?`, and `@catch` turns the expected exceptions of a raising function into an Err. The codebase stays small, pins its tools, and CI tests it on Python 3.11 to 3.15.
 
 ## User Stories
 
 1. As a caller, I want to return `Ok(value)` or `Err(error)` from a function annotated `Result[T, E]`, so that each caller sees the failure in the type.
 2. As a caller, I want to return `Some(value)` or `Nothing()` from a function annotated `Option[T]`, so that an absent value differs from `Some(None)`.
 3. As a caller, I want `match` on `Ok`/`Err` and `Some`/`Nothing` to narrow each branch, and `assert_never` to report a missing case, so that I handle every variant.
-4. As a caller, I want `isinstance` and `if result:` to narrow both branches, so that a short check also gives the right type.
+4. As a caller, I want `isinstance` to narrow both branches and `bool()` on a variant to raise, so that a short check gives the right type and `if result:` cannot hide a bug.
 5. As a caller, I want `unwrap`, `expect`, `unwrap_or` and `unwrap_or_else`, so that I get the value, a default, or an `UnwrapError` that keeps the original exception.
 6. As a caller, I want `map`, `map_err`, `and_then`, `or_else`, `flatten` and `transpose`, so that I change a value or an error without unpacking the variant.
 7. As a caller, I want `ok`, `err`, `ok_or`, `ok_or_else`, `from_optional` and `to_optional`, so that I move between Option, Result and `T | None`.
@@ -24,7 +24,7 @@ The `oxide` package gives an Option (a Some or Nothing) and a Result (an Ok or a
 12. As a caller, I want variants that compare, hash, print and pickle, so that they work in tests, sets, caches and multiprocessing.
 13. As a caller who runs mypy, pyright, ty or pyrefly, I want the package's inline types, so that my checker needs no plugin and no config.
 14. As a caller, I want to install the package from GitHub on Python 3.11 to 3.15, so that I can use it before any release.
-15. As a reader of the repo, I want a README with install steps, one sample and the three narrowing styles, so that I can start without reading the code.
+15. As a reader of the repo, I want a README with install steps, one sample and the two narrowing styles, so that I can start without reading the code.
 16. As a contributor, I want one pinned dev group, the pre-commit hook and CI on each PR, so that my change passes the same checks on every supported Python.
 
 ## Implementation Decisions
@@ -37,7 +37,7 @@ The `oxide` package gives an Option (a Some or Nothing) and a Result (an Ok or a
 | `Result` and `Option` are union aliases of four `@final` classes, and `value` and `error` are read-only properties over slots. | Key Decisions: Structure, Attributes |
 | `Nothing()` returns one instance. | [adr/0002](adr/0002-nothing-is-a-final-class-singleton.md) |
 | The methods are the set in the design's API section, and nothing outside it. | Key Decisions: Methods; [CLAUDE.md](../CLAUDE.md) |
-| The documented narrowing styles are `match`, `isinstance` and `if result:`. Truthiness tests the variant, not the content. The `is_*()` methods return `bool` and narrow nothing. | Key Decisions: Narrowing styles, Query methods |
+| The documented narrowing styles are `match` and `isinstance`. A variant has no truth value: `bool()` raises `TypeError`. The `is_*()` methods return `bool` and narrow nothing. | Key Decisions: Narrowing styles, Query methods; [adr/0003](adr/0003-variants-have-no-truth-value.md) |
 | A method call on a union resolves on both variants, so `result.and_then(function)` accumulates the error types. | design: API |
 | A do function takes Results only, and an Option enters it through `ok_or`. `do` raises `TypeError` for a function that is not a generator function. | [adr/0001](adr/0001-do-function-with-try-replaces-question-mark.md); design: Do functions |
 | `catch` takes 1 to 3 exception types bound to `Exception`, and raises `TypeError` for none, `Exception` or `BaseException`. | Key Decisions: `catch` |
@@ -53,7 +53,7 @@ The `oxide` package gives an Option (a Some or Nothing) and a Result (an Ok or a
 ## Testing Decisions
 
 - Each test imports from `oxide` only, never from a private module.
-- `tests/test_result.py` and `tests/test_option.py` test each method on each variant, the `UnwrapError` messages and `raise from`, equality, hash, `repr`, pickle, and the `Nothing` instance.
+- `tests/test_result.py` and `tests/test_option.py` test each method on each variant, the `UnwrapError` messages and `raise from`, equality, hash, `repr`, pickle, the `TypeError` from `bool()`, and the `Nothing` instance.
 - `tests/test_do.py` tests the early return on an Err, the Ok value at the end, the error union, and the `TypeError` for a function that is not a generator function.
 - `tests/test_catch.py` tests the conversion of each listed type, the propagation of other exceptions, the kept signature, and the `TypeError` cases.
 - `tests/test_narrowing.py` runs each documented style on Result and Option, and holds an `assert_type` in each branch. The checkers prove it statically, and pytest runs it.

@@ -1,6 +1,6 @@
 # Nothing is a `@final` class with one instance
 
-The variant of an Option with no value is `@final class Nothing`, and `Nothing()` always returns the same instance. The pattern is `case Nothing():`, the same text as the constructor call, and `match`, `isinstance` and `if option:` narrow both branches on mypy, pyright, ty and pyrefly.
+The variant of an Option with no value is `@final class Nothing`, and `Nothing()` always returns the same instance. The pattern is `case Nothing():`, the same text as the constructor call, and `match` and `isinstance` narrow both branches on mypy, pyright, ty and pyrefly.
 
 ## Considered Options
 

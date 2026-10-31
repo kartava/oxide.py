@@ -48,14 +48,6 @@ def describe_by_isinstance(result: Result[int, str]) -> str:
     return f"error {result.error}"
 
 
-def describe_by_truthiness(result: Result[int, str]) -> str:
-    if result:
-        assert_type(result, Ok[int])
-        return f"value {result.value}"
-    assert_type(result, Err[str])
-    return f"error {result.error}"
-
-
 @each_variant
 def test_match_narrows_both_branches(text: str, description: str) -> None:
     assert describe_by_match(parse(text)) == description
@@ -64,11 +56,6 @@ def test_match_narrows_both_branches(text: str, description: str) -> None:
 @each_variant
 def test_isinstance_narrows_both_branches(text: str, description: str) -> None:
     assert describe_by_isinstance(parse(text)) == description
-
-
-@each_variant
-def test_truthiness_narrows_both_branches(text: str, description: str) -> None:
-    assert describe_by_truthiness(parse(text)) == description
 
 
 def describe_option_by_match(option: Option[int]) -> str:
@@ -103,18 +90,3 @@ def test_isinstance_narrows_both_branches_of_an_option(
     text: str, description: str
 ) -> None:
     assert describe_option_by_isinstance(find(text)) == description
-
-
-def describe_option_by_truthiness(option: Option[int]) -> str:
-    if option:
-        assert_type(option, Some[int])
-        return f"value {option.value}"
-    assert_type(option, Nothing)
-    return "nothing"
-
-
-@each_option
-def test_truthiness_narrows_both_branches_of_an_option(
-    text: str, description: str
-) -> None:
-    assert describe_option_by_truthiness(find(text)) == description

@@ -2,7 +2,6 @@ from collections.abc import Callable, Generator, Iterable
 from typing import (
     Any,
     Generic,
-    Literal,
     Never,
     TypeAlias,
     TypeVar,
@@ -21,6 +20,10 @@ E_co = TypeVar("E_co", covariant=True)
 
 class UnwrapError(Exception):
     """Report a failed unwrap, such as `unwrap()` on an Err."""
+
+
+def _no_truth_value(variant: str) -> TypeError:
+    return TypeError(f"{variant} has no truth value. Use match or isinstance.")
 
 
 @final
@@ -143,8 +146,8 @@ class Ok(Generic[T_co]):
     def __repr__(self) -> str:
         return f"Ok({self._value!r})"
 
-    def __bool__(self) -> Literal[True]:
-        return True
+    def __bool__(self) -> Never:
+        raise _no_truth_value("Ok")
 
 
 @final
@@ -272,8 +275,8 @@ class Err(Generic[E_co]):
     def __repr__(self) -> str:
         return f"Err({self._error!r})"
 
-    def __bool__(self) -> Literal[False]:
-        return False
+    def __bool__(self) -> Never:
+        raise _no_truth_value("Err")
 
 
 @final
@@ -370,8 +373,8 @@ class Some(Generic[T_co]):
     def __repr__(self) -> str:
         return f"Some({self._value!r})"
 
-    def __bool__(self) -> Literal[True]:
-        return True
+    def __bool__(self) -> Never:
+        raise _no_truth_value("Some")
 
 
 @final
@@ -457,8 +460,8 @@ class Nothing:
     def __repr__(self) -> str:
         return "Nothing()"
 
-    def __bool__(self) -> Literal[False]:
-        return False
+    def __bool__(self) -> Never:
+        raise _no_truth_value("Nothing")
 
 
 _NOTHING = object.__new__(Nothing)

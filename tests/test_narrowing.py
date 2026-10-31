@@ -5,10 +5,18 @@ import pytest
 from oxide import Err, Nothing, Ok, Option, Result, Some
 
 each_variant = pytest.mark.parametrize(
-    ("text", "description"), [("8080", "value 8080"), ("x", "error x")]
+    ("text", "description"),
+    [
+        pytest.param("8080", "value 8080", id="an ok takes the ok branch"),
+        pytest.param("x", "error x", id="an err takes the err branch"),
+    ],
 )
 each_option = pytest.mark.parametrize(
-    ("text", "description"), [("8080", "value 8080"), ("x", "nothing")]
+    ("text", "description"),
+    [
+        pytest.param("8080", "value 8080", id="a some takes the some branch"),
+        pytest.param("x", "nothing", id="nothing takes the nothing branch"),
+    ],
 )
 
 

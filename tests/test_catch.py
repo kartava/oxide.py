@@ -31,9 +31,19 @@ def describe(name: str, count: str) -> str:
 @pytest.mark.parametrize(
     ("name", "count", "description"),
     [
-        ("apple", "2", "price 6"),
-        ("apple", "x", "error ValueError"),
-        ("pear", "2", "error KeyError"),
+        pytest.param("apple", "2", "price 6", id="two apples give the price"),
+        pytest.param(
+            "apple",
+            "x",
+            "error ValueError",
+            id="a count that is not a number gives an err of a value error",
+        ),
+        pytest.param(
+            "pear",
+            "2",
+            "error KeyError",
+            id="an unknown name gives an err of a key error",
+        ),
     ],
 )
 def test_catch_types_the_error_with_the_union_of_its_exceptions(
@@ -45,12 +55,18 @@ def test_catch_types_the_error_with_the_union_of_its_exceptions(
 @pytest.mark.parametrize(
     ("exceptions", "message"),
     [
-        ((), "no exception type"),
-        ((Exception,), "not Exception"),
-        ((BaseException,), "not BaseException"),
+        pytest.param((), "no exception type", id="no type is rejected"),
+        pytest.param(
+            (Exception,), "not Exception", id="exception is rejected"
+        ),
+        pytest.param(
+            (BaseException,),
+            "not BaseException",
+            id="base exception is rejected",
+        ),
     ],
 )
-def test_catch_rejects_no_type_exception_and_base_exception(
+def test_catch(
     exceptions: tuple[type[BaseException], ...], message: str
 ) -> None:
     unchecked_catch = cast("Callable[..., object]", catch)
@@ -59,7 +75,14 @@ def test_catch_rejects_no_type_exception_and_base_exception(
 
 
 @pytest.mark.parametrize(
-    "error", [ValueError("x"), KeyError("x"), ZeroDivisionError("x")]
+    "error",
+    [
+        pytest.param(ValueError("x"), id="a value error becomes an err"),
+        pytest.param(KeyError("x"), id="a key error becomes an err"),
+        pytest.param(
+            ZeroDivisionError("x"), id="a zero division error becomes an err"
+        ),
+    ],
 )
 def test_catch_turns_each_listed_exception_into_an_err_of_it(
     error: ValueError | KeyError | ZeroDivisionError,

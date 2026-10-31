@@ -75,8 +75,17 @@ class Ok(Generic[T_co]):
     def or_else(self, function: Callable[[Never], object]) -> "Ok[T_co]":
         return self
 
+    def ok(self) -> "Some[T_co]":
+        return Some(self._value)
+
+    def err(self) -> "Nothing":
+        return Nothing()
+
     def flatten(self: "Ok[Result[U, F]]") -> "Result[U, F]":
         return self._value
+
+    def transpose(self: "Ok[Option[U]]") -> "Option[Ok[U]]":
+        return self._value.map(Ok)
 
     def try_(self) -> Generator[Never, Any, T_co]:
         yield from ()
@@ -150,8 +159,17 @@ class Err(Generic[E_co]):
     ) -> "Result[U, F]":
         return function(self._error)
 
+    def ok(self) -> "Nothing":
+        return Nothing()
+
+    def err(self) -> "Some[E_co]":
+        return Some(self._error)
+
     def flatten(self) -> "Err[E_co]":
         return self
+
+    def transpose(self) -> "Some[Err[E_co]]":
+        return Some(self)
 
     def try_(self) -> Generator["Err[E_co]", Any, Never]:
         yield self
@@ -208,6 +226,30 @@ class Some(Generic[T_co]):
     def unwrap_or_else(self, function: Callable[[], object]) -> T_co:
         return self._value
 
+    def map(self, function: Callable[[T_co], U]) -> "Some[U]":
+        return Some(function(self._value))
+
+    def and_then(self, function: Callable[[T_co], "Option[U]"]) -> "Option[U]":
+        return function(self._value)
+
+    def or_else(self, function: Callable[[], object]) -> "Some[T_co]":
+        return self
+
+    def ok_or(self, error: object) -> Ok[T_co]:
+        return Ok(self._value)
+
+    def ok_or_else(self, function: Callable[[], object]) -> Ok[T_co]:
+        return Ok(self._value)
+
+    def flatten(self: "Some[Option[U]]") -> "Option[U]":
+        return self._value
+
+    def transpose(self: "Some[Result[U, F]]") -> "Result[Some[U], F]":
+        return self._value.map(Some)
+
+    def to_optional(self) -> T_co:
+        return self._value
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Some):
             return NotImplemented
@@ -249,6 +291,30 @@ class Nothing:
     def unwrap_or_else(self, function: Callable[[], D]) -> D:
         return function()
 
+    def map(self, function: Callable[[Never], object]) -> "Nothing":
+        return self
+
+    def and_then(self, function: Callable[[Never], object]) -> "Nothing":
+        return self
+
+    def or_else(self, function: Callable[[], "Option[U]"]) -> "Option[U]":
+        return function()
+
+    def ok_or(self, error: F) -> Err[F]:
+        return Err(error)
+
+    def ok_or_else(self, function: Callable[[], F]) -> Err[F]:
+        return Err(function())
+
+    def flatten(self) -> "Nothing":
+        return self
+
+    def transpose(self) -> "Ok[Nothing]":
+        return Ok(self)
+
+    def to_optional(self) -> None:
+        return None
+
     def __repr__(self) -> str:
         return "Nothing()"
 
@@ -281,3 +347,7 @@ def partition(items: Iterable[Result[T, E]]) -> tuple[list[T], list[E]]:
         else:
             errors.append(item.error)
     return values, errors
+
+
+def from_optional(value: T | None) -> Option[T]:
+    return Nothing() if value is None else Some(value)

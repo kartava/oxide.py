@@ -8,6 +8,7 @@ from oxide._core import (
     Some,
     UnwrapError,
     collect,
+    from_optional,
     partition,
 )
 from oxide._do import Do, do
@@ -24,5 +25,6 @@ __all__ = [
     "catch",
     "collect",
     "do",
+    "from_optional",
     "partition",
 ]

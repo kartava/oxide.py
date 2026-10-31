@@ -13,6 +13,7 @@
 - Python 3.10 is past its end of life (2026-10-01). Python 3.11 is the oldest supported version, until 2027-10-31.
 - A covariant TypeVar cannot be a method parameter on any of the four checkers. A method that takes a value of the content type uses a second TypeVar.
 - ty 0.0.95 infers a lambda passed to a method on a union as `Unknown`, with no error. The tests assert no lambda result on a union.
+- ty 0.0.95 types a string literal argument as its `Literal` type, so `assert_type(option.ok_or("x"), Err[str])` fails on ty. The tests assert no type of a literal argument.
 
 ## Architecture
 

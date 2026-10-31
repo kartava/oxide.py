@@ -4,7 +4,7 @@ from typing import assert_type
 
 import pytest
 
-from oxide import Do, Err, Ok, Result, do
+from oxide import Do, Err, Nothing, Ok, Option, Result, Some, do
 
 NOT_A_NUMBER = ValueError("not a number")
 
@@ -32,7 +32,18 @@ def test_do_function_returns_ok_of_its_return_value() -> None:
 
 @pytest.mark.parametrize(
     ("text", "error"),
-    [("x", Err(NOT_A_NUMBER)), ("70000", Err("out of range: 70000"))],
+    [
+        pytest.param(
+            "x",
+            Err(NOT_A_NUMBER),
+            id="a letter gives the err of the first step",
+        ),
+        pytest.param(
+            "70000",
+            Err("out of range: 70000"),
+            id="a large number gives the err of the second step",
+        ),
+    ],
 )
 def test_do_function_returns_the_err_of_the_first_failed_step(
     text: str, error: Result[str, ValueError | str]
@@ -74,3 +85,28 @@ def test_do_function_returns_the_error_union_of_its_annotation() -> None:
 def test_do_function_keeps_its_parameters() -> None:
     assert list(inspect.signature(load_address).parameters) == ["text"]
     assert load_address(text="8080") == Ok("localhost:8080")
+
+
+NO_PORT = LookupError("no port")
+
+
+def find(text: str) -> Option[int]:
+    return Some(int(text)) if text.isdigit() else Nothing()
+
+
+@do
+def load_port(text: str) -> Do[int, LookupError]:
+    port = yield from find(text).ok_or(NO_PORT).try_()
+    assert_type(port, int)
+    return port
+
+
+@pytest.mark.parametrize(
+    ("text", "result"),
+    [
+        pytest.param("8080", Ok(8080), id="some gives its value"),
+        pytest.param("x", Err(NO_PORT), id="nothing returns the err"),
+    ],
+)
+def test_ok_or_step(text: str, result: Result[int, LookupError]) -> None:
+    assert load_port(text) == result

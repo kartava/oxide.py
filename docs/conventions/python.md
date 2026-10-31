@@ -54,3 +54,26 @@ Each module of the package whose name has no leading underscore sets `__all__`. 
 ```python
 __all__ = ["Order", "OrderLine"]
 ```
+
+## Tests
+
+A test covers one behavior, and its name says which one. A name with "or" covers two. Name the test after the method instead, and give each case a `pytest.param` id that says the input and the result. Every parametrized case has a `pytest.param` id.
+
+```python
+@pytest.mark.parametrize(
+    ("order", "status"),
+    [
+        pytest.param(Order("cart"), "cancelled", id="a cart is cancelled"),
+        pytest.param(Order("shipped"), "shipped", id="a shipped order stays"),
+    ],
+)
+def test_cancel(order: Order, status: str) -> None:
+    order.cancel()
+    assert order.status == status
+```
+
+Bad:
+
+```python
+def test_cancel_cancels_a_cart_or_keeps_a_shipped_order() -> None: ...
+```

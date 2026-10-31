@@ -43,7 +43,6 @@ docs/spec.md                    user story 14, no version number
 ```toml
 [project]
 name = "oxide.py"
-version = "1.0.0"
 description = "Rust's Option<T> and Result<T, E>, implemented for Python."
 authors = [{ name = "Andrew Kartava" }]
 classifiers = [
@@ -66,7 +65,7 @@ Changelog = "https://github.com/kartava/oxide.py/releases"
 include = ["/src", "/tests"]
 ```
 
-The other `[project]` fields stay as [option-and-result.md](option-and-result.md) gives them.
+`version` is in `pyproject.toml` only (Key Decisions: Version in docs). The other `[project]` fields stay as [option-and-result.md](option-and-result.md) gives them.
 
 ## Flow
 

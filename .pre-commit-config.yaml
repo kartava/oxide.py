@@ -1,0 +1,29 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: 25bcf95026b96e2dd3c0aec3090c3d6ef6ca2e6c  # frozen: v0.17.3
+    hooks:
+      - id: ruff-format
+        args: [--check]
+      - id: ruff-check
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
+    hooks:
+      - id: check-toml
+      - id: check-yaml
+      - id: check-merge-conflict
+        args: [--assume-in-merge]
+      - id: check-added-large-files
+        args: [--enforce-all]
+  - repo: local
+    hooks:
+      - id: check-trailing-whitespace
+        name: check for trailing whitespace
+        entry: '[ \t]+$'
+        language: pygrep
+        types: [text]
+      - id: check-end-of-file
+        name: check for one newline at end of file
+        entry: '(?:[^\n]|\n\n)\Z'
+        language: pygrep
+        args: [--multiline]
+        types: [text]

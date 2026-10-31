@@ -11,7 +11,7 @@ Code follows PEP 8 and PEP 257. Ruff checks each rule it can, from `[tool.ruff]`
 | Layout, quotes, wrap at 79 columns | `ruff format` |
 | PEP 8 errors and warnings; docstrings and comments wrap at 72 | `E`, `W` |
 | Import order; absolute imports only | `I`, `TID` |
-| PEP 8 names; `_co` on a covariant `TypeVar` | `N`, `PLC0105` |
+| PEP 8 names; `_co` on a covariant `TypeVar`: a generic class of `bool` is then one of `int` | `N`, `PLC0105` |
 | PEP 257 docstring form | `D`, convention `pep257` |
 | Annotations on every signature; a code on each `# type: ignore` | `ANN`, `PGH` |
 | Unused code, bug patterns, simpler forms, current syntax, pytest style | `F`, `B`, `SIM`, `UP`, `RUF`, `PT` |
@@ -48,7 +48,7 @@ quantities = [l.quantity for l in order.lines]
 
 ## `__all__`
 
-Each module whose name has no leading underscore sets `__all__`. It lists the public names of the module and nothing else.
+Each module of the package whose name has no leading underscore sets `__all__`. It lists the public names of the module and nothing else.
 
 ```python
 __all__ = ["Order", "OrderLine"]

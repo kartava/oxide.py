@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `oxide.py` ports Rust's `Option<T>` and `Result<T, E>` to Python. It must beat the existing libraries on three points: type narrowing, no type-checker plugin, and maintenance.
 
-The repo has no package code yet. The design doc in `docs/` defines the v1 API.
+The package code lives in `src/oxide/`. The design doc in `docs/` defines the v1 API.
 
 ## Rules
 
@@ -20,16 +20,20 @@ The repo has no package code yet. The design doc in `docs/` defines the v1 API.
 Create `.venv` once per clone with `python3 -m venv .venv`, or link an existing env to `.venv`. Then run each tool as a module of its Python.
 
 ```sh
-.venv/bin/python -m pip install ruff==0.17.3 pre-commit  # dev tools
+.venv/bin/python -m pip install -U pip && .venv/bin/python -m pip install -e . --group dev  # package and dev tools
 .venv/bin/python -m pre_commit install                   # once per clone
 .venv/bin/python -m ruff format .                        # format
 .venv/bin/python -m ruff check .                         # lint
 .venv/bin/python -m pytest                               # all tests
 .venv/bin/python -m pytest <file>::<test_name>           # one test
+.venv/bin/python -m mypy                                 # type check
+.venv/bin/python -m pyright                              # type check
+.venv/bin/python -m ty check                             # type check
+.venv/bin/python -m pyrefly check                        # type check
 .venv/bin/python -m pre_commit run --all-files           # all hooks
 ```
 
-The pre-commit hook checks the staged files and never writes a file. It runs `ruff format --check`, `ruff check`, and checks for TOML and YAML syntax, merge-conflict markers, large files, trailing whitespace and the final newline. A failed hook stops the commit. Fix the files, then stage them again. `.pre-commit-config.yaml` pins each hook repo with `rev`. Keep the Ruff `rev` equal to the Ruff version in `.venv`.
+The pre-commit hook checks the staged files and never writes a file. It runs `ruff format --check`, `ruff check`, and checks for TOML and YAML syntax, merge-conflict markers, large files, trailing whitespace and the final newline. A failed hook stops the commit. Fix the files, then stage them again. `.pre-commit-config.yaml` pins each hook repo with `rev`. Keep the Ruff `rev` equal to the Ruff pin in `[dependency-groups]` of `pyproject.toml`.
 
 ## Tests
 

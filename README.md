@@ -6,6 +6,17 @@
 - No type-checker plugin and no config.
 - No dependencies from Python 3.12. Python 3.11 needs `typing_extensions`.
 
+## Why
+
+A Python function reports a failure with an exception or with `None`. The signature does not show the exceptions, so a caller can forget to catch them and crash at runtime:
+
+```python
+def parse_port(text: str) -> int:
+    return int(text)  # raises ValueError on "abc"
+```
+
+`oxide` puts the outcome in the return type. The function returns `Ok(value)` or `Err(error)`, `Some(value)` or `Nothing`. The caller unpacks the value with a plain `match`, and the type checker reports a missing case. See [Quick start](#quick-start).
+
 ## Installation
 
 The package needs Python 3.11 or later, and imports as `oxide`.
@@ -33,6 +44,13 @@ pip install git+https://github.com/kartava/oxide.py
 - [Catching exceptions](#catching-exceptions)
 - [Do functions](#do-functions)
 - [Unwrap errors](#unwrap-errors)
+
+### Use cases
+
+- [A service from end to end](#a-service-from-end-to-end)
+- [A database error becomes a domain Err](#a-database-error-becomes-a-domain-err)
+- [A batch job](#a-batch-job)
+- [Async code](#async-code)
 - [Migrating from rustedpy/result](#migrating-from-rustedpyresult)
 
 ## Importing
@@ -313,6 +331,7 @@ checked: Result[int, KeyError | ValueError] = price("apple", "2")
 - `catch` takes one to three exception types, and the `Err` type is their union.
 - `catch()`, `catch(Exception)`, and a value that is not a subclass of `Exception`, such as `KeyboardInterrupt`, raise `TypeError`: `catch` converts expected exceptions only.
 - Inside the decorated function, a listed exception becomes an `Err` even when a bug raised it.
+- `catch` takes a sync function only. For an `async def`, see [Async code](#async-code).
 
 ## Do functions
 
@@ -404,6 +423,177 @@ try:
 except UnwrapError as error:
     assert str(error).startswith("called `Result.unwrap()` on an `Err` value")
     assert isinstance(error.__cause__, ValueError)
+```
+
+## A service from end to end
+
+A repository returns an Option, a service returns a Result with one error type for each failure, and the HTTP layer maps each error to a status code.
+
+```python
+from dataclasses import dataclass
+from typing import assert_never
+
+from oxide import Do, Err, Ok, Option, Result, do, from_optional
+
+
+@dataclass
+class Order:
+    order_id: int
+    owner: str
+    shipped: bool = False
+
+
+@dataclass(frozen=True)
+class NotFound:
+    order_id: int
+
+
+@dataclass(frozen=True)
+class NotOwner:
+    order_id: int
+
+
+class Orders:
+    def __init__(self, *orders: Order) -> None:
+        self._rows = {order.order_id: order for order in orders}
+
+    def find(self, order_id: int) -> Option[Order]:
+        return from_optional(self._rows.get(order_id))
+
+
+def check_owner(order: Order, user: str) -> Result[Order, NotOwner]:
+    if order.owner != user:
+        return Err(NotOwner(order.order_id))
+    return Ok(order)
+
+
+@do
+def ship(
+    orders: Orders, order_id: int, user: str
+) -> Do[int, NotFound | NotOwner]:
+    found = yield from orders.find(order_id).ok_or(NotFound(order_id)).try_()
+    order = yield from check_owner(found, user).try_()
+    order.shipped = True
+    return order.order_id
+
+
+def status_code(result: Result[int, NotFound | NotOwner]) -> int:
+    match result:
+        case Ok():
+            return 200
+        case Err(error):
+            match error:
+                case NotFound():
+                    return 404
+                case NotOwner():
+                    return 403
+                case _:
+                    assert_never(error)
+        case _:
+            assert_never(result)
+
+
+orders = Orders(Order(1, "ann"))
+assert status_code(ship(orders, 2, "ann")) == 404
+assert status_code(ship(orders, 1, "bob")) == 403
+assert status_code(ship(orders, 1, "ann")) == 200
+```
+
+- `ok_or` turns a missing order into an `Err`, so one do function runs both checks.
+- Match on the error in a second `match`. A pattern such as `case Err(NotFound()):` works at runtime, but no type checker proves that such cases cover every error.
+
+## A database error becomes a domain Err
+
+`@catch` turns the database exception into an `Err`, and `map_err` replaces it with a domain error. Every other database exception propagates.
+
+```python
+import sqlite3
+from dataclasses import dataclass
+
+from oxide import Err, Ok, Result, catch
+
+database = sqlite3.connect(":memory:")
+database.execute("CREATE TABLE users (email TEXT PRIMARY KEY)")
+
+
+@dataclass(frozen=True)
+class EmailTaken:
+    email: str
+
+
+@catch(sqlite3.IntegrityError)
+def insert_user(email: str) -> str:
+    database.execute("INSERT INTO users VALUES (?)", (email,))
+    return email
+
+
+def register(email: str) -> Result[str, EmailTaken]:
+    return insert_user(email).map_err(lambda error: EmailTaken(email))
+
+
+assert register("ann@example.com") == Ok("ann@example.com")
+assert register("ann@example.com") == Err(EmailTaken("ann@example.com"))
+```
+
+## A batch job
+
+A batch job keeps each value and logs each error. One error does not stop the job.
+
+```python
+import logging
+
+from oxide import Err, Ok, Result, partition
+
+
+def parse_port(text: str) -> Result[int, str]:
+    if not text.isdigit():
+        return Err(f"not a number: {text}")
+    return Ok(int(text))
+
+
+ports, errors = partition(parse_port(line) for line in ["80", "x", "443"])
+for error in errors:
+    logging.warning("skipped a line: %s", error)
+
+assert ports == [80, 443]
+assert errors == ["not a number: x"]
+```
+
+## Async code
+
+`@do` and `@catch` take sync functions only. In an `async def`, return the `Err` early. The sample uses `Order`, `NotFound` and `NotOwner` from [A service from end to end](#a-service-from-end-to-end).
+
+```python
+import asyncio
+
+from oxide import Err, Nothing, Ok, Option, Result, from_optional
+
+
+class AsyncOrders:
+    def __init__(self, *orders: Order) -> None:
+        self._rows = {order.order_id: order for order in orders}
+
+    async def find(self, order_id: int) -> Option[Order]:
+        return from_optional(self._rows.get(order_id))
+
+
+async def ship(
+    orders: AsyncOrders, order_id: int, user: str
+) -> Result[int, NotFound | NotOwner]:
+    found = await orders.find(order_id)
+    if isinstance(found, Nothing):
+        return Err(NotFound(order_id))
+    order = found.value
+    if order.owner != user:
+        return Err(NotOwner(order_id))
+    order.shipped = True
+    return Ok(order.order_id)
+
+
+orders = AsyncOrders(Order(1, "ann"))
+assert asyncio.run(ship(orders, 2, "ann")) == Err(NotFound(2))
+assert asyncio.run(ship(orders, 1, "bob")) == Err(NotOwner(1))
+assert asyncio.run(ship(orders, 1, "ann")) == Ok(1)
 ```
 
 ## Migrating from `rustedpy/result`

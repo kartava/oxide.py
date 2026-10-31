@@ -8,7 +8,7 @@ from oxide._core import E, Err, Ok, Result, T
 
 if sys.version_info >= (3, 12):
     from typing import TypeAliasType
-else:
+else:  # pragma: no cover
     from typing_extensions import TypeAliasType
 
 P = ParamSpec("P")

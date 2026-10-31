@@ -1,9 +1,11 @@
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from typing import Generic, Literal, Never, TypeAlias, TypeVar, cast, final
 
 T = TypeVar("T")
 E = TypeVar("E")
 D = TypeVar("D")
+U = TypeVar("U")
+F = TypeVar("F")
 T_co = TypeVar("T_co", covariant=True)
 E_co = TypeVar("E_co", covariant=True)
 
@@ -48,6 +50,23 @@ class Ok(Generic[T_co]):
         return self._value
 
     def unwrap_or_else(self, function: Callable[[Never], object]) -> T_co:
+        return self._value
+
+    def map(self, function: Callable[[T_co], U]) -> "Ok[U]":
+        return Ok(function(self._value))
+
+    def map_err(self, function: Callable[[Never], object]) -> "Ok[T_co]":
+        return self
+
+    def and_then(
+        self, function: Callable[[T_co], "Result[U, F]"]
+    ) -> "Result[U, F]":
+        return function(self._value)
+
+    def or_else(self, function: Callable[[Never], object]) -> "Ok[T_co]":
+        return self
+
+    def flatten(self: "Ok[Result[U, F]]") -> "Result[U, F]":
         return self._value
 
     def __eq__(self, other: object) -> bool:
@@ -104,6 +123,23 @@ class Err(Generic[E_co]):
     def unwrap_or_else(self, function: Callable[[E_co], D]) -> D:
         return function(self._error)
 
+    def map(self, function: Callable[[Never], object]) -> "Err[E_co]":
+        return self
+
+    def map_err(self, function: Callable[[E_co], F]) -> "Err[F]":
+        return Err(function(self._error))
+
+    def and_then(self, function: Callable[[Never], object]) -> "Err[E_co]":
+        return self
+
+    def or_else(
+        self, function: Callable[[E_co], "Result[U, F]"]
+    ) -> "Result[U, F]":
+        return function(self._error)
+
+    def flatten(self) -> "Err[E_co]":
+        return self
+
     def _raise(self, message: str) -> Never:
         if isinstance(self._error, BaseException):
             raise UnwrapError(message) from self._error
@@ -126,3 +162,23 @@ class Err(Generic[E_co]):
 
 
 Result: TypeAlias = Ok[T] | Err[E]
+
+
+def collect(items: Iterable[Result[T, E]]) -> Result[list[T], E]:
+    values: list[T] = []
+    for item in items:
+        if isinstance(item, Err):
+            return item
+        values.append(item.value)
+    return Ok(values)
+
+
+def partition(items: Iterable[Result[T, E]]) -> tuple[list[T], list[E]]:
+    values: list[T] = []
+    errors: list[E] = []
+    for item in items:
+        if isinstance(item, Ok):
+            values.append(item.value)
+        else:
+            errors.append(item.error)
+    return values, errors

@@ -1,3 +1,4 @@
+from oxide._catch import catch
 from oxide._core import (
     Err,
     Nothing,
@@ -20,6 +21,7 @@ __all__ = [
     "Result",
     "Some",
     "UnwrapError",
+    "catch",
     "collect",
     "do",
     "partition",

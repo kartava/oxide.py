@@ -13,7 +13,7 @@ A caller installs `oxide.py` from PyPI and pins a version, such as `pip install 
 - [CLAUDE.md](../CLAUDE.md) requires the user's approval before each PyPI upload and each GitHub release.
 - [CLAUDE.md](../CLAUDE.md) forbids public API outside the design, so the package has no `__version__`. A caller reads the version with `importlib.metadata.version("oxide.py")`.
 - Under semver, `1.0.0` fixes the API in [option-and-result.md](option-and-result.md). A breaking change needs `2.0.0`, and a new method needs a minor version.
-- PyPI renders the README with `readme_renderer`, which resolves its anchor links but keeps a relative link as it is. `README.md` links to `tests/test_narrowing.py` by a relative path.
+- PyPI renders the README with `readme_renderer`, which resolves its anchor links but keeps a relative link as it is.
 
 ## Architecture
 

@@ -2,7 +2,7 @@
 
 ## Context
 
-`oxide.py` v1 ports Rust's `Option<T>` and `Result<T, E>` to Python as the `oxide` package. A function returns an Option or a Result, so that an absent value or an expected failure is part of its type, and a type checker forces the caller to handle it. The design beats the existing libraries on three points from the research doc "Designing a Rust-style Result/Option library for Python": narrowing that each of four checkers proves in both branches, no checker plugin, and a small, pinned and CI-tested codebase. Library callers use it; v1 ends merged on `main`, before any release.
+`oxide.py` v1 ports Rust's `Option<T>` and `Result<T, E>` to Python as the `oxide` package. A function returns an Option or a Result, so that an absent value or an expected failure is part of its type, and a type checker forces the caller to handle it. The design beats the existing libraries on three points: narrowing that each of four checkers proves in both branches, no checker plugin, and a small, pinned and CI-tested codebase. Library callers use it; v1 ends merged on `main`, before any release.
 
 ## Constraints
 
@@ -341,7 +341,7 @@ The checker settings live in `pyproject.toml`. `--group` needs pip 25.1 or later
 | Attributes | Read-only `value` and `error` properties over slots | A property keeps the class covariant; under PEP 695 a plain attribute is invariant on all four checkers. |
 | Nothing | `Nothing()`, one instance | [adr/0002](adr/0002-nothing-is-a-final-class-singleton.md). |
 | Query methods | `is_ok()`, `is_err()`, `is_some()`, `is_nothing()`, returning `bool` | They keep Rust's names for calls such as `filter(lambda result: result.is_ok(), results)`, and the README says that they narrow nothing. **Rust's `is_none()`.** Rejected: it reads as a check for Python's `None`. |
-| Methods | The extract, transform, collect and convert set in API | The research doc's Implement list sets the v1 scope: `map`, `and_then`, the `unwrap` family, `ok`, `err`, `collect`, `partition`, `transpose`, `flatten`, `from_optional`, `to_optional`. `expect`, `expect_err`, `map_err`, `or_else`, `ok_or` and `ok_or_else` complete Rust's pairs. **All portable Rust methods.** Rejected: twice the size, with no v1 caller for the rest. |
+| Methods | The extract, transform, collect and convert set in API | Rust's core API sets the v1 scope: `map`, `and_then`, the `unwrap` family, `ok`, `err`, `collect`, `partition`, `transpose`, `flatten`, `from_optional`, `to_optional`. `expect`, `expect_err`, `map_err`, `or_else`, `ok_or` and `ok_or_else` complete Rust's pairs. **All portable Rust methods.** Rejected: twice the size, with no v1 caller for the rest. |
 | `collect` | Results only | On an empty input, the runtime cannot choose between `Ok([])` and `Some([])`. **One overloaded `collect` for both types.** Rejected: an empty list of Options returns the wrong variant. |
 | Narrowing styles | `match`, `isinstance`, truthiness | Each narrows both branches on all four checkers. **`TypeIs` free functions.** Rejected: they repeat `isinstance`. **No `__bool__`.** Rejected: `if parse(text):` would then always be true. |
 | `?` substitute | Do functions with `try_()`, Results only | [adr/0001](adr/0001-do-function-with-try-replaces-question-mark.md). An Option converts with `ok_or`, which keeps one `Do` alias. |

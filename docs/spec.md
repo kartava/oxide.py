@@ -63,12 +63,11 @@ The `oxide` package gives an Option (a Some or Nothing) and a Result (an Ok or a
 
 ## Out of Scope
 
-- A PyPI upload, a GitHub release and version `1.0.0`.
+- A PyPI upload, a GitHub release and version `1.0.0`. The release effort adds them in the next PR, after this one merges.
 - Async variants, `Panic`, a pydantic extra, a benchmark and a migration guide from `rustedpy/result`.
 - `sum`, `product`, ordering, `copy.replace` and iteration over a variant.
 - `TypeIs` free functions, do functions for Option, and `collect` for Option.
 
 ## Further Notes
 
-- The research doc "Designing a Rust-style Result/Option library for Python" stays untracked, so this spec names it without a link.
 - Python 3.10 is past its end of life (2026-10-01). When 3.11 reaches its end of life on 2027-10-31, Ruff's `UP046` and `UP047` rules can move the code to PEP 695 syntax.

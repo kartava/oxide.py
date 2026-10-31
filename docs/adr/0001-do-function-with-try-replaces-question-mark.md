@@ -6,7 +6,7 @@ Python has no `?` operator. A do function, a generator function under `@do`, tak
 
 - **Plain `yield from result`, through `__iter__`.** Rejected: pyright and pyrefly infer `value` as `Unknown`, and an iterable Ok or Err surprises a reader.
 - **`value = result.q()`, with `@propagate` and a private exception.** Rejected: no checker reports an Err type outside the declared one, and a `.q()` call outside the decorator raises the private exception.
-- **No `?` substitute.** Rejected: a chain of `and_then` calls hides the order of the steps, which the research doc's open question asks the library to solve.
+- **No `?` substitute.** Rejected: a chain of `and_then` calls hides the order of the steps.
 
 ## Consequences
 

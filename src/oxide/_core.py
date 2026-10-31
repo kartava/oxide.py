@@ -131,6 +131,8 @@ class Ok(Generic[T_co]):
 
         Use it only in a generator function under `@do`.
         """
+        # `yield from ()` makes this a generator that yields nothing.
+        # A `yield from` on it then gives the return value.
         yield from ()
         return self._value
 
@@ -388,6 +390,9 @@ class Nothing:
 
     def __new__(cls) -> "Nothing":
         return _NOTHING
+
+    def __reduce__(self) -> tuple[type["Nothing"], tuple[()]]:
+        return (Nothing, ())
 
     def is_some(self) -> bool:
         """Return `True` for a Some.

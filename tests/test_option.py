@@ -23,8 +23,15 @@ def test_nothing_is_one_instance() -> None:
     assert Nothing() is Nothing()
 
 
-def test_pickle_keeps_the_nothing_instance() -> None:
-    assert pickle.loads(pickle.dumps(Nothing())) is Nothing()
+@pytest.mark.parametrize(
+    "protocol",
+    [
+        pytest.param(protocol, id=f"protocol {protocol} keeps the instance")
+        for protocol in range(pickle.HIGHEST_PROTOCOL + 1)
+    ],
+)
+def test_pickle_keeps_the_nothing_instance(protocol: int) -> None:
+    assert pickle.loads(pickle.dumps(Nothing(), protocol)) is Nothing()
 
 
 def test_deepcopy_keeps_the_nothing_instance() -> None:

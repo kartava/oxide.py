@@ -33,7 +33,7 @@ Create `.venv` once per clone with `python3 -m venv .venv`, or link an existing 
 .venv/bin/python -m pre_commit run --all-files           # all hooks
 ```
 
-The pre-commit hook checks the staged files and never writes a file. It runs `ruff format --check`, `ruff check`, and checks for TOML and YAML syntax, merge-conflict markers, large files, trailing whitespace and the final newline. A failed hook stops the commit. Fix the files, then stage them again. `.pre-commit-config.yaml` pins each hook repo with `rev`. Keep the Ruff `rev` equal to the Ruff pin in `[dependency-groups]` of `pyproject.toml`.
+The pre-commit hook checks the staged files and never writes a file. It runs `ruff format --check`, `ruff check`, and checks for TOML and YAML syntax, merge-conflict markers, large files, trailing whitespace and the final newline. A failed hook stops the commit. Fix the files, then stage them again. `.pre-commit-config.yaml` pins each hook repo to a commit SHA, with its version in a `# frozen:` comment. Keep the frozen Ruff version equal to the Ruff pin in `[dependency-groups]` of `pyproject.toml`.
 
 ## Tests
 

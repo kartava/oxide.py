@@ -16,7 +16,7 @@ Code follows PEP 8 and PEP 257. Ruff checks each rule it can, from `[tool.ruff]`
 | Annotations on every signature; a code on each `# type: ignore` | `ANN`, `PGH` |
 | Unused code, bug patterns, simpler forms, current syntax, pytest style | `F`, `B`, `SIM`, `UP`, `RUF`, `PT` |
 
-- `D1` is off. [comments.md](comments.md) decides which items get a docstring.
+- `D1` is off: Ruff treats each name in a module whose name starts with `_` as private, and the package keeps its code there. [comments.md](comments.md) says which items get a docstring.
 - `ANN401` is off. The design doc decides where `Any` is allowed.
 - `target-version` is unset. Ruff reads `requires-python` from `pyproject.toml`.
 

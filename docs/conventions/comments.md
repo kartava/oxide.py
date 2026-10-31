@@ -65,7 +65,7 @@ A tool pragma (`# noqa: E501`, `# type: ignore[arg-type]`) is not a comment. The
 
 ## Docstrings
 
-Write a docstring only on a public item whose contract neither the signature nor a short body shows: what triggers it, what it rejects, and why. A docstring that repeats the name, or a condition that the body states in one line, fails the deletion test. Ruff checks the PEP 257 form.
+A public class, method or function of the package has a docstring when it carries a fact that its name and signature do not: what the call does in each case, what it raises, or a trap. Write the summary in the imperative mood, as PEP 257 says. Add one more line only for what the call raises or a trap. A docstring that restates the name, a parameter or the return type fails the deletion test. Ruff checks the PEP 257 form.
 
 ```python
 """Return the order status."""  # <- delete

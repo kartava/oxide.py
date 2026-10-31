@@ -19,6 +19,10 @@ Do = TypeAliasType("Do", Generator[Err[E], Any, T], type_params=(T, E))
 def do(
     function: Callable[P, Generator[Err[E], Any, T]],
 ) -> Callable[P, Result[T, E]]:
+    """Make a do function return a Result in place of a generator.
+
+    Raise `TypeError` when the function is not a generator function.
+    """
     if not inspect.isgeneratorfunction(function):
         raise TypeError(f"{function!r} is not a generator function")
 

@@ -7,7 +7,7 @@
 ## Constraints
 
 - Ruff checks `src/` and `tests/` at 79 columns: annotations on every signature, PEP 257 docstrings, PEP 8 names, the `_co` suffix on a covariant TypeVar, and absolute imports ([python.md](conventions/python.md)).
-- A keyword name takes a trailing underscore, and each public module sets `__all__` ([python.md](conventions/python.md)). A docstring sits only where the signature hides the contract ([comments.md](conventions/comments.md)).
+- A keyword name takes a trailing underscore, and each public module sets `__all__` ([python.md](conventions/python.md)). A public item has a docstring when it carries a fact that its name and signature do not ([comments.md](conventions/comments.md)).
 - The terms are those of [CONTEXT.md](../CONTEXT.md). A Some can hold `None`, and an Err holds any value.
 - Each picked checker reports zero errors on the package and the tests, with no plugin and no library-specific config on the caller's side ([CLAUDE.md](../CLAUDE.md)).
 - Python 3.10 is past its end of life (2026-10-01). Python 3.11 is the oldest supported version, until 2027-10-31.
@@ -348,6 +348,7 @@ The checker settings live in `pyproject.toml`. `--group` needs pip 25.1 or later
 | Bugs | No `Panic`; `UnwrapError` for a failed unwrap | Python already propagates each callback exception. **better-result's `Panic`.** Rejected: it wraps every callback to cover one case inside `catch`. |
 | `catch` | 1 to 3 exception types, bound to `Exception`; `TypeError` for `Exception` and `BaseException` | It converts expected exceptions only. **One `*exceptions` signature.** Rejected: mypy widens the union to a common base class. |
 | `UnwrapError` | No extra attributes; Rust messages with `repr`; `raise from` | No v1 caller reads the variant from the exception, and `raise from` keeps the original traceback. |
+| Docstrings | A public item that carries a fact its name and signature do not: what the call does in each case, what it raises, or a trap | An editor's hover and `help()` are the in-editor docs of a library, and an obvious docstring adds only noise. Ruff checks the form, not the presence: its `D1` rules skip `_` modules. **A docstring on every public item.** Rejected: `value` and `is_ok()` would restate their names. |
 | Runtime | `__slots__`, read-only properties, `==`, `hash`, `repr`, default pickling | Pickle has users in multiprocessing and caches. Without `__hash__`, `__eq__` makes every variant unhashable. **Ordering and `copy.replace`.** Rejected: no v1 caller. **A raising `__setattr__` with `__reduce__`.** Rejected: slots and read-only properties already block public writes, and default pickling works. |
 | Async | None in v1 | It would double the API surface. |
 | Cuts | No pydantic extra, benchmark, migration guide, `sum` or `product` | None has a user before a release. The migration guide fits the release effort. |

@@ -26,6 +26,10 @@ def catch(
 def catch(
     *exceptions: type[BaseException],
 ) -> Callable[[Callable[P, R]], Callable[P, Result[R, BaseException]]]:
+    """Turn the listed exceptions of a function into an Err.
+
+    Raise `TypeError` for no type, `Exception` or `BaseException`.
+    """
     if not exceptions:
         raise TypeError("catch() got no exception type")
     for exception in exceptions:

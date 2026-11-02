@@ -43,7 +43,7 @@ The `oxide` package gives an Option (a Some or Nothing) and a Result (an Ok or a
 | The documented narrowing styles are `match` and `isinstance`. A variant has no truth value: `bool()` raises `TypeError`. The `is_*()` methods return `bool` and narrow nothing. | Key Decisions: Narrowing styles, Query methods; [adr/0003](adr/0003-variants-have-no-truth-value.md) |
 | A method call on a union resolves on both variants, so `result.and_then(function)` accumulates the error types. | design: API |
 | A do function takes Results only, and an Option enters it through `ok_or`. `do` raises `TypeError` for a function that is not a generator function, and for a yield of a value other than an Err. | [adr/0001](adr/0001-do-function-with-try-replaces-question-mark.md); design: Do functions; Key Decisions: Runtime checks |
-| `catch` takes 1 to 3 exception types bound to `Exception`, and raises `TypeError` for none, for `Exception`, and for a value that is not a subclass of `Exception`. | Key Decisions: `catch`, Runtime checks |
+| `catch` takes 1 to 3 exception types bound to `Exception`, and raises `TypeError` for none, for `Exception`, for a value that is not a subclass of `Exception`, and for a coroutine, generator or async generator function. | Key Decisions: `catch`, Runtime checks |
 | A failed unwrap raises `UnwrapError` with a Rust-style message, `from` the error when the error is an exception. There is no `Panic`. | design: Errors; Key Decisions: `UnwrapError`, Bugs |
 | `collect` takes Results only. | Key Decisions: `collect` |
 | The variants support `==`, `hash`, `repr` and pickle protocol 2 or later, and have no `__iter__`. `Nothing` stays one instance at every protocol. | design: Runtime behavior |
@@ -53,7 +53,7 @@ The `oxide` package gives an Option (a Some or Nothing) and a Result (an Ok or a
 | A push of a `v*` tag runs `release.yml`. `build` stops when the tag is not `v` + `version`, then builds the sdist and the wheel. `publish` uploads them through trusted publishing, after the maintainer approves in environment `pypi`. `github-release` then creates the release with generated notes and both files. | [release.md](release.md), Key Decisions: Trigger, Upload, Approval, Tag check, GitHub release |
 | The README installs with `pip install oxide.py`, and links to the narrowing tests by an absolute URL. | [release.md](release.md), Key Decisions: README test link |
 | `[dependency-groups] dev` pins Ruff, pre-commit, pytest and the four checkers. Each install upgrades pip first, because `--group` needs pip 25.1. | design: Packaging and CI |
-| `ci.yml` imports `oxide` from a venv with only the package and runs pytest on 3.11 to 3.15, and a `check` job runs pre-commit and the four checkers at target 3.11. | Key Decisions: CI |
+| `ci.yml` imports `oxide` from a venv with only the package and runs pytest on 3.11 to 3.15, and a `check` job runs pre-commit, the four checkers at target 3.11, and pytest under coverage. A `coverage` job publishes the badge and the PR comment. | Key Decisions: CI, Coverage |
 | `CLAUDE.md` changes the status line, the commands and the hook pin rule. | design: Design Gate |
 
 ## Testing Decisions

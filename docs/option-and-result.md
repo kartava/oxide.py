@@ -278,7 +278,7 @@ sequenceDiagram
 | `unwrap()` | `Nothing` | ``called `Option.unwrap()` on a `Nothing` value`` |
 | `expect(message)` | `Nothing` | `{message}` |
 
-`catch` raises `TypeError` at decoration time when it gets no exception type, `Exception`, or a value that is not a subclass of `Exception`, such as an instance or `KeyboardInterrupt`. Inside the decorated function, an exception of a listed type becomes an Err, even when a bug raised it. Each other exception propagates unchanged, and so does each exception that a callback raises outside `catch`.
+`catch` raises `TypeError` at decoration time when it gets no exception type, `Exception`, or a value that is not a subclass of `Exception`, such as an instance or `KeyboardInterrupt`. It also raises `TypeError` at decoration time for a coroutine, generator or async generator function, because its body runs after the call returns. `catch` cannot detect a sync function that returns a coroutine, such as the wrapper of another decorator, and returns an Ok of the coroutine. Inside the decorated function, an exception of a listed type becomes an Err, even when a bug raised it. Each other exception propagates unchanged, and so does each exception that a callback raises outside `catch`.
 
 `Err.try_()` raises `RuntimeError` when a caller resumes it after its Err, which happens only outside `@do`.
 
@@ -316,6 +316,7 @@ dev = [
     "ruff==0.17.3",
     "pre-commit==4.7.0",
     "pytest==9.2.0",
+    "coverage==7.17.0",
     "mypy==2.4.1",
     "pyright==1.1.414",
     "ty==0.0.95",
@@ -323,7 +324,7 @@ dev = [
 ]
 ```
 
-`packages` is needed because the distribution name `oxide.py` differs from the import name `oxide`. [release.md](release.md) gives the version, the PyPI metadata and the sdist content. `typing_extensions` supplies `TypeAliasType` below 3.12 only.
+`packages` is needed because the distribution name `oxide.py` differs from the import name `oxide`. [release.md](release.md) gives the version, the PyPI metadata and the sdist content. `typing_extensions` supplies `TypeAliasType` below 3.12 only. `[tool.coverage.run]` sets `branch`, `source = ["oxide"]` and `relative_files`, which the coverage action needs.
 
 | Checker | Mode | Target | Paths |
 |---|---|---|---|
@@ -337,7 +338,8 @@ The checker settings live in `pyproject.toml`. pyright also needs `venvPath = ".
 | Job | Python | Steps |
 |---|---|---|
 | `test` | 3.11, 3.12, 3.13, 3.14, 3.15 | Install `.` alone in a separate venv, import `oxide` and find `py.typed`. Create `.venv`, run `pip install -U pip`, install `-e . --group dev`, run pytest. |
-| `check` | 3.14 | Install the same way, run `pre-commit run --all-files`, then the four checkers. |
+| `check` | 3.14 | Install the same way, run `pre-commit run --all-files`, then the four checkers, then `coverage run -m pytest`. Upload `.coverage` as an artifact. |
+| `coverage` | — | After `check`, download `.coverage` and run `python-coverage-comment-action`, with `contents: write` and `pull-requests: write`. On `main`, the action commits the badge to the `python-coverage-comment-action-data` branch. On a PR from the repo, it posts a comment. |
 
 ## Key Decisions
 
@@ -353,8 +355,8 @@ The checker settings live in `pyproject.toml`. pyright also needs `venvPath = ".
 | Narrowing styles | `match`, `isinstance` | Each narrows both branches on all four checkers. **`TypeIs` free functions.** Rejected: they repeat `isinstance`. **Truthiness.** Rejected: a true `Some(0)` or `Ok([])` hides a bug ([adr/0003](adr/0003-variants-have-no-truth-value.md)). |
 | `?` substitute | Do functions with `try_()`, Results only | [adr/0001](adr/0001-do-function-with-try-replaces-question-mark.md). An Option converts with `ok_or`, which keeps one `Do` alias. |
 | Bugs | No `Panic`; `UnwrapError` for a failed unwrap | Python already propagates each callback exception. **better-result's `Panic`.** Rejected: it wraps every callback to cover one case inside `catch`. |
-| `catch` | 1 to 3 exception types, bound to `Exception`; `TypeError` for `Exception` and for each value that is not a subclass of it | It converts expected exceptions only. **One `*exceptions` signature.** Rejected: mypy widens the union to a common base class. |
-| Runtime checks | `do` and `catch` raise `TypeError` for input that their annotations reject | A caller with no checker gets an error at the bad call, not a wrong value later: a bare `yield` would return the yielded value as the result, and `catch(KeyboardInterrupt)` would turn Ctrl-C into an Err. **Static checks only.** Rejected: `catch(BaseException)` already needs a runtime check. |
+| `catch` | 1 to 3 exception types, bound to `Exception`; `TypeError` for `Exception`, for each value that is not a subclass of it, and for a coroutine, generator or async generator function | It converts expected exceptions only, and only those that the call raises. **One `*exceptions` signature.** Rejected: mypy widens the union to a common base class. |
+| Runtime checks | `do` and `catch` raise `TypeError` for input that their annotations reject, and `catch` for a function whose body runs after the call returns | A caller gets an error at the bad call, not a wrong value later: a bare `yield` would return the yielded value as the result, `catch(KeyboardInterrupt)` would turn Ctrl-C into an Err, and `@catch` on an `async def` would return an Ok of the coroutine and let its exceptions escape. **Static checks only.** Rejected: `catch(BaseException)` already needs a runtime check, and no checker reports `@catch` on an `async def`. |
 | `UnwrapError` | No extra attributes; Rust messages with `repr`; `raise from` | No v1 caller reads the variant from the exception, and `raise from` keeps the original traceback. |
 | Docstrings | A public item that carries a fact its name and signature do not: what the call does in each case, what it raises, or a trap | An editor's hover and `help()` are the in-editor docs of a library, and an obvious docstring adds only noise. Ruff checks the form, not the presence: its `D1` rules skip `_` modules. **A docstring on every public item.** Rejected: `value` and `is_ok()` would restate their names. |
 | Runtime | `__slots__`, read-only properties, `==`, `hash`, `repr`, pickle protocol 2 or later, `Nothing.__reduce__` | Pickle has users in multiprocessing and caches. Pickle protocols 0 and 1 skip `__new__`, so `Nothing` needs `__reduce__` to stay one instance. Without `__hash__`, `__eq__` makes every variant unhashable. **Ordering and `copy.replace`.** Rejected: no v1 caller. **A raising `__setattr__` with `__reduce__` on each variant.** Rejected: slots and read-only properties already block public writes, and the default protocol, which multiprocessing uses, works for `Ok`, `Err` and `Some`. |
@@ -365,6 +367,7 @@ The checker settings live in `pyproject.toml`. pyright also needs `venvPath = ".
 | Checkers | mypy, pyright, ty, pyrefly, each with an exact pin | Proof on all four is the narrowing point. Exact pins keep a new release of ty, which is pre-1.0, out of CI. |
 | Tests | Plain pytest; `tests/test_narrowing.py` holds the `assert_type` proofs | Narrowing is a static check, and one file proves each style at runtime and statically. **Gherkin.** Rejected: its steps check runtime behavior only. |
 | CI | pytest on 3.11 to 3.15; one `check` job targeting 3.11 | All four checkers give the same result at 3.11 and 3.14. CI is the only test path below the `.venv` version. A venv with only the package proves the `typing_extensions` marker and `py.typed`, which the dev tools hide. |
+| Coverage | Branch coverage in the `check` job; `python-coverage-comment-action` for the badge and the PR comment; no gate | Only the repo's `GITHUB_TOKEN` writes the number, and the job with write access runs no test code. A fork PR gets no comment, because GitHub gives it a read-only token. **Codecov.** Rejected: it accepts tokenless uploads for the fork branches of a public repo, in every auth mode. |
 | Updates | Dependabot, weekly with a 7-day cooldown, for the actions and the hooks except Ruff | The Ruff hook moves only together with the Ruff dev pin, so that local Ruff and the hook agree. The dev pins stay manual. |
 | Packaging | `hatchling`, `src/oxide/`, `py.typed` | The README install step and CI need a build backend. [release.md](release.md) gives the version. |
 | Dev tools | `[dependency-groups] dev` with exact pins | One list serves CI, contributors and `.venv`. |

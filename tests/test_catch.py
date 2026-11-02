@@ -1,5 +1,5 @@
 import inspect
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable, Iterator
 from types import FunctionType
 from typing import assert_never, assert_type, cast
 
@@ -80,6 +80,35 @@ def test_catch(exceptions: tuple[object, ...], message: str) -> None:
     unchecked_catch = cast("Callable[..., object]", catch)
     with pytest.raises(TypeError, match=message):
         unchecked_catch(*exceptions)
+
+
+async def load_later() -> int:
+    return 1
+
+
+def load_each() -> Iterator[int]:
+    yield 1
+
+
+async def load_each_later() -> AsyncIterator[int]:
+    yield 1
+
+
+@pytest.mark.parametrize(
+    "function",
+    [
+        pytest.param(load_later, id="an async function is rejected"),
+        pytest.param(load_each, id="a generator function is rejected"),
+        pytest.param(
+            load_each_later, id="an async generator function is rejected"
+        ),
+    ],
+)
+def test_catch_rejects_a_function_whose_body_runs_after_the_call(
+    function: Callable[[], object],
+) -> None:
+    with pytest.raises(TypeError, match="is a coroutine, generator"):
+        catch(ValueError)(function)
 
 
 @pytest.mark.parametrize(

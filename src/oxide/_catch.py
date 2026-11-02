@@ -1,4 +1,5 @@
 import functools
+import inspect
 from collections.abc import Callable
 from typing import ParamSpec, TypeVar, overload
 
@@ -29,7 +30,8 @@ def catch(
     """Turn the listed exceptions of a function into an Err.
 
     Raise `TypeError` for no type, for `Exception`, and for a value
-    that is not a subclass of `Exception`.
+    that is not a subclass of `Exception`. At decoration, raise
+    `TypeError` for a coroutine, generator or async generator function.
     """
     if not exceptions:
         raise TypeError("catch() got no exception type")
@@ -38,6 +40,12 @@ def catch(
     def decorator(
         function: Callable[P, R],
     ) -> Callable[P, Result[R, Exception]]:
+        if _body_runs_after_the_call(function):
+            raise TypeError(
+                f"{function!r} is a coroutine, generator"
+                " or async generator function"
+            )
+
         @functools.wraps(function)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> Result[R, Exception]:
             try:
@@ -59,3 +67,11 @@ def _expected(exception: object) -> type[Exception]:
     ):
         return exception
     raise TypeError(f"catch() converts expected exceptions only, not {name}")
+
+
+def _body_runs_after_the_call(function: object) -> bool:
+    return (
+        inspect.iscoroutinefunction(function)
+        or inspect.isgeneratorfunction(function)
+        or inspect.isasyncgenfunction(function)
+    )

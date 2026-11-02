@@ -1,6 +1,6 @@
 [project]
 name = "oxide.py"
-version = "1.0.0"
+version = "1.0.1"
 description = "Rust's Option<T> and Result<T, E>, implemented for Python."
 authors = [{ name = "Andrew Kartava" }]
 requires-python = ">=3.11"
@@ -38,11 +38,17 @@ dev = [
     "ruff==0.17.3",
     "pre-commit==4.7.0",
     "pytest==9.2.0",
+    "coverage==7.17.0",
     "mypy==2.4.1",
     "pyright==1.1.414",
     "ty==0.0.95",
     "pyrefly==1.4.0",
 ]
+
+[tool.coverage.run]
+branch = true
+source = ["oxide"]
+relative_files = true
 
 [tool.mypy]
 strict = true

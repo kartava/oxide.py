@@ -1,5 +1,9 @@
 # oxide.py
 
+[![CI](https://github.com/kartava/oxide.py/actions/workflows/ci.yml/badge.svg)](https://github.com/kartava/oxide.py/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/oxide.py)](https://pypi.org/project/oxide.py/)
+[![Coverage](https://raw.githubusercontent.com/kartava/oxide.py/python-coverage-comment-action-data/badge.svg)](https://github.com/kartava/oxide.py/tree/python-coverage-comment-action-data)
+
 [Rust](https://www.rust-lang.org)'s `Option<T>` and `Result<T, E>`, implemented for Python. A function returns one of them, so that an absent value or an expected failure is part of its type.
 
 - `match` and `isinstance` narrow both branches on mypy, pyright, ty and pyrefly.
@@ -331,7 +335,8 @@ checked: Result[int, KeyError | ValueError] = price("apple", "2")
 - `catch` takes one to three exception types, and the `Err` type is their union.
 - `catch()`, `catch(Exception)`, and a value that is not a subclass of `Exception`, such as `KeyboardInterrupt`, raise `TypeError`: `catch` converts expected exceptions only.
 - Inside the decorated function, a listed exception becomes an `Err` even when a bug raised it.
-- `catch` takes a sync function only. For an `async def`, see [Async code](#async-code).
+- A coroutine, generator or async generator function raises `TypeError` at decoration: its body runs after the call returns. For an `async def`, see [Async code](#async-code).
+- `catch` cannot detect a sync function that returns a coroutine, such as the wrapper of another decorator. It returns an `Ok` of the coroutine.
 
 ## Do functions
 
